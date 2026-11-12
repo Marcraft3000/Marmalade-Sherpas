@@ -1,0 +1,19 @@
+{
+  "id": "audit_michael-carter_1794513478456",
+  "caseId": "michael-carter",
+  "caseName": "Michael Carter",
+  "isCoupleMode": false,
+  "activePartner": null,
+  "currentStage": "interrogation",
+  "createdAt": "2026-11-12T19:57:58.456Z",
+  "updatedAt": "2026-11-12T19:57:58.456Z",
+  "expectedScore": 70,
+  "partnerScores": {},
+  "answers": [],
+  "summary": null,
+  "reveal": null,
+  "verdict": null,
+  "mission": null,
+  "followUpHistory": [],
+  "simulatedDay": 0
+}
