@@ -79,7 +79,7 @@ export default function MissionStage({
         {/* Mission Badge & Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#1C2529]">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-mono font-bold tracking-widest uppercase px-3 py-1 rounded-full bg-[#04724D] text-[#0A0D0E]">
+            <span className="text-xs font-mono font-bold tracking-widest uppercase px-3 py-1 rounded-full bg-[#04724D] text-white">
               {mission?.number || 'MISSION 01'}
             </span>
             <span className="text-xs text-[#92979B] font-mono">HIGHEST PRIORITY ACTION</span>
@@ -159,8 +159,8 @@ export default function MissionStage({
               onClick={() => handleDecision('accept')}
               className={`p-4 rounded-2xl font-bold text-xs md:text-sm flex items-center justify-center gap-2 transition-all ${
                 decision === 'accepted' || decision === 'accept'
-                  ? 'bg-[#04724D] text-[#0A0D0E] shadow-[0_0_25px_rgba(4,114,77,0.4)]'
-                  : 'bg-[#04724D]/20 text-[#B8DBD9] hover:bg-[#04724D] hover:text-[#0A0D0E] border border-[#04724D]/40'
+                  ? 'bg-[#04724D] text-white shadow-[0_0_25px_rgba(4,114,77,0.4)]'
+                  : 'bg-[#04724D]/20 text-[#B8DBD9] hover:bg-[#04724D] hover:text-white border border-[#04724D]/40'
               }`}
             >
               <Check className="w-4 h-4" />

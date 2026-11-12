@@ -250,7 +250,7 @@ export default function RevealStage({
 
         <button
           onClick={onProceedToVerdict}
-          className="px-6 py-3 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-[#0A0D0E] font-black text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(4,114,77,0.3)] transition-all whitespace-nowrap"
+          className="px-6 py-3 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-white font-black text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(4,114,77,0.3)] transition-all whitespace-nowrap"
         >
           <span>PROCEED TO THE VERDICT</span>
           <ArrowRight className="w-4 h-4" />

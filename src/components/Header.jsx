@@ -10,7 +10,7 @@ const STAGES = [
   { id: 'followup', label: 'Follow-up' },
 ];
 
-export default function Header({ session, stage, isMuted, onToggleMute, onOpenAdvisorBriefing, onOpenCostMonitor, onTimeTravel, onResetSession, mockMode }) {
+export default function Header({ session, stage, isMuted, onToggleMute, onOpenAdvisorBriefing, onOpenCostMonitor, onTimeTravel, onResetSession, mockMode, showCostMonitor }) {
   const activeIndex = STAGES.findIndex((item) => item.id === stage);
 
   return (
@@ -49,9 +49,9 @@ export default function Header({ session, stage, isMuted, onToggleMute, onOpenAd
               <FileText className="h-3.5 w-3.5 text-[#B8DBD9]" /><span className="hidden xl:inline">Briefing</span>
             </button>
           </>}
-          <button onClick={onOpenCostMonitor} className="inline-flex items-center gap-1.5 rounded-lg border border-[#1C2529] bg-[#0E1315] px-2.5 py-2 font-mono text-xs text-[#92979B] transition-colors hover:text-white" title="AI usage and cost monitor">
+          {showCostMonitor && <button onClick={onOpenCostMonitor} className="inline-flex items-center gap-1.5 rounded-lg border border-[#1C2529] bg-[#0E1315] px-2.5 py-2 font-mono text-xs text-[#92979B] transition-colors hover:text-white" title="AI usage and cost monitor">
             <Cpu className="h-3.5 w-3.5 text-[#B8DBD9]" /><span className="hidden sm:inline">Usage</span>
-          </button>
+          </button>}
           <button onClick={onToggleMute} aria-label={isMuted ? 'Turn auditor voice on' : 'Mute auditor voice'} className={`rounded-lg border p-2 transition-colors ${isMuted ? 'border-[#1C2529] bg-[#0E1315] text-[#92979B]' : 'border-[#04724D]/50 bg-[#04724D]/15 text-[#B8DBD9]'}`}>
             {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>

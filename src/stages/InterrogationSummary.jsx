@@ -125,7 +125,7 @@ export default function InterrogationSummary({
 
           <button
             onClick={onProceedToReveal}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-[#0A0D0E] font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(4,114,77,0.35)] transition-all"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-white font-black text-sm flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(4,114,77,0.35)] transition-all"
           >
             <span>REVEAL WHAT THE NUMBERS SAY</span>
             <ArrowRight className="w-4 h-4" />

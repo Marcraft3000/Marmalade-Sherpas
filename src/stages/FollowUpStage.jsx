@@ -165,7 +165,7 @@ export default function FollowUpStage({
 
           <button
             onClick={onResetAudit}
-            className="px-5 py-2.5 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-[#0A0D0E] text-xs font-bold flex items-center gap-2 transition-all shadow-md"
+            className="px-5 py-2.5 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-white text-xs font-bold flex items-center gap-2 transition-all shadow-md"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Audit Another Family</span>

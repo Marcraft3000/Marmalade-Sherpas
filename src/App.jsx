@@ -236,6 +236,7 @@ export default function App() {
         onTimeTravel={handleTimeTravel}
         onResetSession={handleResetSession}
         mockMode={mockMode}
+        showCostMonitor={import.meta.env.DEV}
       />
 
       {/* Main Content Body */}
@@ -310,9 +311,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#1C2529] py-4 px-6 text-center text-xs text-[#92979B] font-mono">
-        THE PLAN AUDIT • Sherpas x UPV Sigma Data Club Hackathon 2026 • Caleb Hammer Inspired Format
-      </footer>
+      <footer className="border-t border-[#1C2529] px-6 py-4 text-center font-mono text-[10px] tracking-wide text-[#586F7C]">THE PLAN AUDIT | SHERPAS x UPV SIGMA DATA CLUB | 2026</footer>
 
       {/* Modals */}
       <CostMonitorModal

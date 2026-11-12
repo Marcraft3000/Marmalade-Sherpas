@@ -216,9 +216,9 @@ export default function InterrogationStage({
                 className="w-full h-3 bg-[#0A0D0E] rounded-lg appearance-none cursor-pointer accent-[#04724D] border border-[#1C2529]"
               />
               <div className="flex justify-between text-xs font-mono text-[#92979B]">
-                <span>0 · Needs support</span>
-                <span>50 · In the middle</span>
-                <span>100 · Excellent</span>
+                <span>0 - Needs support</span>
+                <span>50 - In the middle</span>
+                <span>100 - Excellent</span>
               </div>
             </div>
           </div>
