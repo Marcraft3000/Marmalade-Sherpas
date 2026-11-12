@@ -6,7 +6,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM } from './casesService.mjs';
+import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM, importPlan } from './casesService.mjs';
+import { inspectPlan } from './planAdapter.mjs';
 import { aiService } from './aiService.mjs';
 import { auditEngine } from './auditEngine.mjs';
 
@@ -18,7 +19,11 @@ const REALTIME_MODELS = ['gpt-realtime-2.1-mini', 'gpt-realtime-2.1', 'gemini-3.
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
+app.use((err, req, res, next) => {
+  if (err) return res.status(err.status || 400).json({ success: false, error: err.type === 'entity.too.large' ? 'The JSON file must be smaller than 5 MB.' : 'Invalid JSON request.' });
+  next();
+});
 
 // Persistent sessions folder
 const SESSIONS_DIR = path.resolve(here, '../data/sessions');
@@ -68,6 +73,16 @@ app.get('/api/cases', (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+app.post('/api/plans/inspect', (req, res) => {
+  try { res.json({ success: true, inspection: inspectPlan(req.body.document) }); }
+  catch (err) { res.status(400).json({ success: false, error: err.message }); }
+});
+
+app.post('/api/plans/import', (req, res) => {
+  try { res.status(201).json({ success: true, case: importPlan(req.body.document, req.body.options) }); }
+  catch (err) { res.status(400).json({ success: false, error: err.message }); }
 });
 
 // 2. Get single case details
@@ -140,6 +155,7 @@ app.post('/api/audit/discovery/check', async (req, res) => {
   try {
     const { sessionId, discoveryId, choice, userComment } = req.body;
     const result = await auditEngine.handleUnderstandingCheck(sessionId, discoveryId, choice, userComment);
+    persistSessionToFile(auditEngine.getSession(sessionId));
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
