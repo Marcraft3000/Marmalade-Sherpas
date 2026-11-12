@@ -1,134 +1,63 @@
 import React from 'react';
-import { Volume2, VolumeX, FastForward, FileText, Cpu, RotateCcw, ShieldAlert } from 'lucide-react';
+import { Volume2, VolumeX, FastForward, FileText, Cpu, ShieldCheck } from 'lucide-react';
 
-export default function Header({
-  session,
-  stage,
-  isMuted,
-  onToggleMute,
-  onOpenAdvisorBriefing,
-  onOpenCostMonitor,
-  onTimeTravel,
-  onResetSession,
-  mockMode,
-}) {
-  const STAGES = [
-    { id: 'interrogation', label: '1. Interrogate' },
-    { id: 'summary', label: '1.5 Summary' },
-    { id: 'reveal', label: '2. The Reveal' },
-    { id: 'verdict', label: '3. Verdict' },
-    { id: 'mission', label: '4. Mission' },
-    { id: 'followup', label: '5. Follow-Up' },
-  ];
+const STAGES = [
+  { id: 'interrogation', label: 'Your perspective' },
+  { id: 'summary', label: 'The recap' },
+  { id: 'reveal', label: 'The reveal' },
+  { id: 'verdict', label: 'The verdict' },
+  { id: 'mission', label: 'Your mission' },
+  { id: 'followup', label: 'Follow-up' },
+];
+
+export default function Header({ session, stage, isMuted, onToggleMute, onOpenAdvisorBriefing, onOpenCostMonitor, onTimeTravel, onResetSession, mockMode }) {
+  const activeIndex = STAGES.findIndex((item) => item.id === stage);
 
   return (
-    <header className="sticky top-0 z-50 bg-[#101112]/90 backdrop-blur-md border-b border-[#2E3236] px-4 lg:px-8 py-3">
-      <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Brand & Active Case */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onResetSession}
-            className="flex items-center gap-2 group text-left focus:outline-none"
-            title="Return to Case Selection"
-          >
-            <div className="w-8 h-8 rounded-lg bg-[#C7F36B] flex items-center justify-center font-black text-[#101112] text-sm group-hover:scale-105 transition-transform shadow-[0_0_15px_rgba(199,243,107,0.3)]">
-              ⚡
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold tracking-tight text-white text-base">THE PLAN AUDIT</span>
-                <span className="text-[10px] uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-[#C7F36B]/15 text-[#C7F36B] font-bold border border-[#C7F36B]/30">
-                  SHERPAS 2026
-                </span>
-                {mockMode && (
-                  <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold" title="Running in zero-token local mock mode">
-                    🛡️ Zero-Token Dev
-                  </span>
-                )}
-              </div>
-              {session && (
-                <div className="text-xs text-[#92979B] flex items-center gap-1.5">
-                  <span className="font-semibold text-white">{session.caseName}</span>
-                  {session.isCoupleMode && (
-                    <span className="text-[10px] text-[#C7F36B] bg-[#C7F36B]/10 px-1 rounded">Couple Mode</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </button>
-        </div>
+    <header className="sticky top-0 z-50 border-b border-[#1C2529] bg-[#0A0D0E]/90 px-4 py-3 backdrop-blur-xl sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+        <button onClick={onResetSession} className="group flex min-w-0 items-center gap-3 text-left" title="Return to case selection">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#04724D] text-white shadow-[0_0_20px_rgba(4,114,77,0.24)] transition-transform group-hover:scale-105">
+            <ShieldCheck className="h-5 w-5" />
+          </span>
+          <span className="min-w-0">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="font-extrabold tracking-tight text-white">THE PLAN AUDIT</span>
+              <span className="rounded border border-[#1C2529] px-1.5 py-0.5 font-mono text-[9px] font-semibold tracking-wider text-[#B8DBD9]">SHERPAS 2026</span>
+              {mockMode && <span className="rounded-full border border-[#04724D]/40 bg-[#04724D]/15 px-2 py-0.5 font-mono text-[9px] font-semibold text-[#B8DBD9]">DEMO MODE</span>}
+            </span>
+            {session && <span className="mt-0.5 block truncate text-xs text-[#92979B]">{session.caseName}{session.isCoupleMode ? ' · Couple audit' : ''}</span>}
+          </span>
+        </button>
 
-        {/* Stage Progress Bar (Visible when session is active) */}
         {session && (
-          <div className="hidden md:flex items-center gap-1 bg-[#191B1D] px-2 py-1 rounded-full border border-[#2E3236]">
-            {STAGES.map((s) => {
-              const isActive = stage === s.id;
-              return (
-                <span
-                  key={s.id}
-                  className={`text-xs px-2.5 py-1 rounded-full transition-colors ${
-                    isActive
-                      ? 'bg-[#C7F36B] text-[#101112] font-bold shadow-[0_0_10px_rgba(199,243,107,0.3)]'
-                      : 'text-[#92979B] hover:text-white'
-                  }`}
-                >
-                  {s.label}
-                </span>
-              );
+          <nav aria-label="Audit progress" className="hidden items-center gap-1 rounded-full border border-[#1C2529] bg-[#0E1315] p-1 lg:flex">
+            {STAGES.map((item, index) => {
+              const active = stage === item.id;
+              const complete = activeIndex > index;
+              return <span key={item.id} aria-current={active ? 'step' : undefined} className={`rounded-full px-3 py-1.5 text-xs transition-colors ${active ? 'bg-[#04724D] font-semibold text-white' : complete ? 'text-[#B8DBD9]' : 'text-[#586F7C]'}`}>{item.label}</span>;
             })}
-          </div>
+          </nav>
         )}
 
-        {/* Action Controls */}
-        <div className="flex items-center gap-2">
-          {session && (
-            <>
-              {/* Demo Time Travel Button */}
-              <button
-                onClick={onTimeTravel}
-                className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500/15 text-amber-300 border border-amber-500/30 hover:bg-amber-500/25 transition-all shadow-sm"
-                title="Fast forward simulated timeline 30 days for jury demonstration"
-              >
-                <FastForward className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">FAST FORWARD</span> 30 DAYS
-              </button>
-
-              {/* Advisor Briefing Report */}
-              <button
-                onClick={onOpenAdvisorBriefing}
-                className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-lg bg-[#222528] text-white hover:bg-[#2E3236] border border-[#2E3236] transition-colors"
-                title="Open Paraplanner & Advisor Briefing Report"
-              >
-                <FileText className="w-3.5 h-3.5 text-[#C7F36B]" />
-                <span className="hidden lg:inline">Advisor Briefing</span>
-              </button>
-            </>
-          )}
-
-          {/* AI Usage / Budget Console */}
-          <button
-            onClick={onOpenCostMonitor}
-            className="flex items-center gap-1 text-xs font-mono px-2.5 py-1.5 rounded-lg bg-[#191B1D] text-[#92979B] hover:text-white border border-[#2E3236] transition-colors"
-            title="AI Cost & Token Usage Console"
-          >
-            <Cpu className="w-3.5 h-3.5 text-sky-400" />
-            <span className="hidden sm:inline">AI Tokens</span>
+        <div className="flex shrink-0 items-center gap-2">
+          {session && <>
+            <button onClick={onTimeTravel} className="inline-flex items-center gap-1.5 rounded-lg border border-amber-500/25 bg-amber-500/10 px-2.5 py-2 text-xs font-semibold text-amber-200 transition-colors hover:bg-amber-500/20 sm:px-3" title="Advance the simulated timeline by 30 days">
+              <FastForward className="h-3.5 w-3.5" /><span className="hidden sm:inline">FAST FORWARD</span><span>30D</span>
+            </button>
+            <button onClick={onOpenAdvisorBriefing} className="inline-flex items-center gap-1.5 rounded-lg border border-[#1C2529] bg-[#0E1315] px-2.5 py-2 text-xs text-[#F4F4F9] transition-colors hover:border-[#04724D]" title="Open advisor briefing">
+              <FileText className="h-3.5 w-3.5 text-[#B8DBD9]" /><span className="hidden xl:inline">Briefing</span>
+            </button>
+          </>}
+          <button onClick={onOpenCostMonitor} className="inline-flex items-center gap-1.5 rounded-lg border border-[#1C2529] bg-[#0E1315] px-2.5 py-2 font-mono text-xs text-[#92979B] transition-colors hover:text-white" title="AI usage and cost monitor">
+            <Cpu className="h-3.5 w-3.5 text-[#B8DBD9]" /><span className="hidden sm:inline">Usage</span>
           </button>
-
-          {/* Audio Mute / Unmute */}
-          <button
-            onClick={onToggleMute}
-            className={`p-2 rounded-lg border transition-colors ${
-              isMuted
-                ? 'bg-[#191B1D] border-[#2E3236] text-[#92979B] hover:text-white'
-                : 'bg-[#C7F36B]/15 border-[#C7F36B]/40 text-[#C7F36B]'
-            }`}
-            title={isMuted ? 'Unmute Auditor Voice' : 'Mute Auditor Voice'}
-          >
-            {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          <button onClick={onToggleMute} aria-label={isMuted ? 'Turn auditor voice on' : 'Mute auditor voice'} className={`rounded-lg border p-2 transition-colors ${isMuted ? 'border-[#1C2529] bg-[#0E1315] text-[#92979B]' : 'border-[#04724D]/50 bg-[#04724D]/15 text-[#B8DBD9]'}`}>
+            {isMuted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
           </button>
         </div>
       </div>
+      {session && <div className="mt-3 h-0.5 overflow-hidden rounded-full bg-[#1C2529] lg:hidden"><div className="h-full bg-[#04724D] transition-all" style={{ width: `${Math.max(1, ((activeIndex + 1) / STAGES.length) * 100)}%` }} /></div>}
     </header>
   );
 }

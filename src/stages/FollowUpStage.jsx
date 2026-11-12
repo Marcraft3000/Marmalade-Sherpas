@@ -66,9 +66,9 @@ export default function FollowUpStage({
       />
 
       {/* Hero Card */}
-      <div className="bg-[#191B1D] border border-[#2E3236] rounded-2xl p-6 md:p-8 shadow-2xl space-y-6">
+      <div className="bg-[#0E1315] border border-[#1C2529] rounded-2xl p-6 md:p-8 shadow-2xl space-y-6">
         {/* Timeline Header & Demo Time Travel Control */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#2E3236]">
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1C2529]">
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-bold tracking-widest uppercase px-2.5 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
@@ -95,7 +95,7 @@ export default function FollowUpStage({
         </div>
 
         {/* Mission Reminder Banner */}
-        <div className="p-4 rounded-xl bg-[#101112] border border-[#2E3236] flex items-center justify-between gap-3 text-xs">
+        <div className="p-4 rounded-xl bg-[#0A0D0E] border border-[#1C2529] flex items-center justify-between gap-3 text-xs">
           <div>
             <span className="text-[#92979B] font-mono uppercase text-[10px] block">COMMITTED MISSION</span>
             <span className="text-white font-semibold text-sm">{mission?.title}</span>
@@ -124,8 +124,8 @@ export default function FollowUpStage({
                 onClick={() => handleStatusSelect(opt.id)}
                 className={`p-4 rounded-xl text-left border transition-all ${
                   selectedStatus === opt.id
-                    ? 'bg-[#C7F36B]/15 border-[#C7F36B] text-white shadow-[0_0_15px_rgba(199,243,107,0.15)]'
-                    : 'bg-[#222528] border-[#2E3236] text-[#92979B] hover:text-white hover:border-[#474E54]'
+                    ? 'bg-[#04724D]/15 border-[#04724D] text-white shadow-[0_0_15px_rgba(4,114,77,0.15)]'
+                    : 'bg-[#101719] border-[#1C2529] text-[#92979B] hover:text-white hover:border-[#474E54]'
                 }`}
               >
                 <div className="font-bold text-sm text-white mb-1">{opt.label}</div>
@@ -137,8 +137,8 @@ export default function FollowUpStage({
 
         {/* Auditor Reaction Box */}
         {auditorFeedback && (
-          <div className="p-5 rounded-2xl bg-[#101112] border border-[#C7F36B]/30 space-y-3 animate-slide-up">
-            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#C7F36B] uppercase">
+          <div className="p-5 rounded-2xl bg-[#0A0D0E] border border-[#04724D]/30 space-y-3 animate-slide-up">
+            <div className="flex items-center gap-2 text-xs font-mono font-bold text-[#B8DBD9] uppercase">
               <Sparkles className="w-4 h-4" />
               <span>AUDITOR'S ACCOUNTABILITY FEEDBACK</span>
             </div>
@@ -155,17 +155,17 @@ export default function FollowUpStage({
         )}
 
         {/* Action Controls */}
-        <div className="pt-6 border-t border-[#2E3236] flex flex-wrap items-center justify-between gap-4">
+        <div className="pt-6 border-t border-[#1C2529] flex flex-wrap items-center justify-between gap-4">
           <button
             onClick={onOpenAdvisorBriefing}
-            className="px-4 py-2.5 rounded-xl bg-[#222528] hover:bg-[#2E3236] border border-[#2E3236] text-xs font-semibold text-white flex items-center gap-2 transition-colors"
+            className="px-4 py-2.5 rounded-xl bg-[#101719] hover:bg-[#1C2529] border border-[#1C2529] text-xs font-semibold text-white flex items-center gap-2 transition-colors"
           >
             <span>View Advisor Briefing Sheet</span>
           </button>
 
           <button
             onClick={onResetAudit}
-            className="px-5 py-2.5 rounded-xl bg-[#C7F36B] hover:bg-[#B8E55A] text-[#101112] text-xs font-bold flex items-center gap-2 transition-all shadow-md"
+            className="px-5 py-2.5 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-[#0A0D0E] text-xs font-bold flex items-center gap-2 transition-all shadow-md"
           >
             <RotateCcw className="w-3.5 h-3.5" />
             <span>Audit Another Family</span>

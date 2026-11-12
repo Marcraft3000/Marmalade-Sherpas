@@ -50,9 +50,9 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#191B1D] border border-[#2E3236] rounded-2xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+      <div className="bg-[#0E1315] border border-[#1C2529] rounded-2xl max-w-2xl w-full p-6 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-[#2E3236]">
+        <div className="flex items-center justify-between pb-4 border-b border-[#1C2529]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center font-mono">
               <Zap className="w-4 h-4" />
@@ -64,7 +64,7 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-lg hover:bg-[#222528] text-[#92979B] hover:text-white transition-colors"
+            className="p-1 rounded-lg hover:bg-[#101719] text-[#92979B] hover:text-white transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -73,7 +73,7 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
         {/* Content */}
         <div className="py-4 space-y-4 overflow-y-auto flex-1">
           {/* Mock Mode Switch / Token Guardian */}
-          <div className="p-4 rounded-xl bg-[#222528] border border-[#2E3236] flex items-center justify-between gap-4">
+          <div className="p-4 rounded-xl bg-[#101719] border border-[#1C2529] flex items-center justify-between gap-4">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
                 <span className="font-semibold text-sm text-white">Token Protection Mode</span>
@@ -107,16 +107,16 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
           </div>
 
           {/* Budget Gauge */}
-          <div className="p-4 rounded-xl bg-[#101112] border border-[#2E3236] space-y-2">
+          <div className="p-4 rounded-xl bg-[#0A0D0E] border border-[#1C2529] space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[#92979B] font-medium">Team AI Credit Allowance</span>
               <span className="font-mono font-bold text-white">
                 ${totalCost.toFixed(4)} / ${budgetLimit.toFixed(2)} USD
               </span>
             </div>
-            <div className="w-full h-2.5 bg-[#222528] rounded-full overflow-hidden">
+            <div className="w-full h-2.5 bg-[#101719] rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#C7F36B] transition-all duration-500 rounded-full"
+                className="h-full bg-[#04724D] transition-all duration-500 rounded-full"
                 style={{ width: `${Math.max(1, pctSpent)}%` }}
               ></div>
             </div>
@@ -128,25 +128,25 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
 
           {/* Metrics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="p-3 rounded-xl bg-[#222528] border border-[#2E3236]">
+            <div className="p-3 rounded-xl bg-[#101719] border border-[#1C2529]">
               <div className="text-[11px] text-[#92979B] uppercase font-mono">Total Calls</div>
               <div className="text-lg font-bold font-mono text-white mt-1">
                 {data?.totalRequests ?? 0}
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-[#222528] border border-[#2E3236]">
+            <div className="p-3 rounded-xl bg-[#101719] border border-[#1C2529]">
               <div className="text-[11px] text-[#92979B] uppercase font-mono">Prompt Tokens</div>
               <div className="text-lg font-bold font-mono text-sky-400 mt-1">
                 {data?.totalPromptTokens ?? 0}
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-[#222528] border border-[#2E3236]">
+            <div className="p-3 rounded-xl bg-[#101719] border border-[#1C2529]">
               <div className="text-[11px] text-[#92979B] uppercase font-mono">Completion</div>
-              <div className="text-lg font-bold font-mono text-[#C7F36B] mt-1">
+              <div className="text-lg font-bold font-mono text-[#B8DBD9] mt-1">
                 {data?.totalCompletionTokens ?? 0}
               </div>
             </div>
-            <div className="p-3 rounded-xl bg-[#222528] border border-[#2E3236]">
+            <div className="p-3 rounded-xl bg-[#101719] border border-[#1C2529]">
               <div className="text-[11px] text-[#92979B] uppercase font-mono">Failed Calls</div>
               <div className="text-lg font-bold font-mono text-amber-400 mt-1">
                 {data?.failedRequests ?? 0}
@@ -166,10 +166,10 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
                 <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} /> Refresh
               </button>
             </div>
-            <div className="max-h-48 overflow-y-auto rounded-xl border border-[#2E3236] bg-[#101112]">
+            <div className="max-h-48 overflow-y-auto rounded-xl border border-[#1C2529] bg-[#0A0D0E]">
               {data?.recentCalls?.length > 0 ? (
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-[#191B1D] text-[#92979B] font-mono border-b border-[#2E3236]">
+                  <thead className="bg-[#0E1315] text-[#92979B] font-mono border-b border-[#1C2529]">
                     <tr>
                       <th className="p-2">Stage</th>
                       <th className="p-2">Model</th>
@@ -177,9 +177,9 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
                       <th className="p-2 text-right">Cost</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[#2E3236] font-mono">
+                  <tbody className="divide-y divide-[#1C2529] font-mono">
                     {data.recentCalls.map((c, i) => (
-                      <tr key={i} className="hover:bg-[#191B1D]/50">
+                      <tr key={i} className="hover:bg-[#0E1315]/50">
                         <td className="p-2 font-sans font-medium text-white">{c.purpose}</td>
                         <td className="p-2 text-sky-400">{c.model}</td>
                         <td className="p-2 text-[#92979B]">{c.latencyMs}ms</td>
@@ -198,10 +198,10 @@ export default function CostMonitorModal({ isOpen, onClose, onMockModeChange }) 
         </div>
 
         {/* Footer */}
-        <div className="pt-4 border-t border-[#2E3236] flex justify-end">
+        <div className="pt-4 border-t border-[#1C2529] flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-xl bg-[#222528] hover:bg-[#2E3236] text-white text-xs font-semibold transition-colors"
+            className="px-4 py-2 rounded-xl bg-[#101719] hover:bg-[#1C2529] text-white text-xs font-semibold transition-colors"
           >
             Close
           </button>

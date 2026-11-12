@@ -224,7 +224,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#101112] text-[#F1EFE9] flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0A0D0E] text-[#F1EFE9] flex flex-col font-sans">
       {/* Top Header & Navigation */}
       <Header
         session={session}
@@ -242,7 +242,7 @@ export default function App() {
       <main className="flex-1 flex flex-col justify-center">
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
-            <div className="w-12 h-12 rounded-full border-2 border-[#2E3236] border-t-[#C7F36B] animate-spin"></div>
+            <div className="w-12 h-12 rounded-full border-2 border-[#1C2529] border-t-[#04724D] animate-spin"></div>
             <span className="text-xs font-mono uppercase tracking-widest text-[#92979B]">
               CALIBRATING AUDIT ROOM...
             </span>
@@ -310,7 +310,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#2E3236] py-4 px-6 text-center text-xs text-[#92979B] font-mono">
+      <footer className="border-t border-[#1C2529] py-4 px-6 text-center text-xs text-[#92979B] font-mono">
         THE PLAN AUDIT • Sherpas x UPV Sigma Data Club Hackathon 2026 • Caleb Hammer Inspired Format
       </footer>
 
