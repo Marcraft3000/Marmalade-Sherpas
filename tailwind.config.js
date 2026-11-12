@@ -7,33 +7,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        audit: {
-          bg: "#101112",
-          secondary: "#191B1D",
-          surface: "#222528",
-          card: "#1E2023",
-          border: "#2E3236",
-          text: "#F1EFE9",
-          muted: "#92979B",
-          lime: "#C7F36B",
-          limeHover: "#B8E55A",
-          limeDim: "rgba(199, 243, 107, 0.12)",
-          amber: "#F59E0B",
-          amberDim: "rgba(245, 158, 11, 0.15)",
-          red: "#EF4444",
-          redDim: "rgba(239, 68, 68, 0.15)",
-          blue: "#38BDF8",
-          blueDim: "rgba(56, 189, 248, 0.15)"
+        brand: {
+          primary: "#04724D",       // Deep Emerald Green
+          primaryHover: "#03593C",
+          primaryDim: "rgba(4, 114, 77, 0.15)",
+          primaryGlow: "rgba(4, 114, 77, 0.35)",
+          light: "#F4F4F9",         // Crisp Ghost Off-White
+          teal: "#B8DBD9",          // Soft Powder Teal / Ice
+          tealDim: "rgba(184, 219, 217, 0.12)",
+          slate: "#586F7C",         // Steel Slate Gray
+          slateDim: "rgba(88, 111, 124, 0.2)",
+          black: "#000000",         // Pure Obsidian Black
+          surface: "#0A0D0E",       // Deep Elevated Surface
+          card: "#0E1315",          // Elevated Card Background
+          border: "#1C2529",         // Refined Border
+          borderHover: "#2C3940",
         }
       },
       fontFamily: {
-        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
-        display: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        sans: ['Plus Jakarta Sans', 'system-ui', '-apple-system', 'sans-serif'],
+        display: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
       },
       animation: {
-        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-        'fade-in': 'fadeIn 0.35s ease-out forwards',
-        'slide-up': 'slideUp 0.4s ease-out forwards',
+        'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'slide-up': 'slideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        'pulse-subtle': 'pulseSubtle 3s infinite ease-in-out',
+        'float': 'float 6s ease-in-out infinite',
       },
       keyframes: {
         fadeIn: {
@@ -41,8 +41,16 @@ export default {
           '100%': { opacity: '1' },
         },
         slideUp: {
-          '0%': { opacity: '0', transform: 'translateY(12px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        pulseSubtle: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.6' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
         }
       }
     },

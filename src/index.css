@@ -8,71 +8,109 @@
 
 body {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background-color: #101112;
-  color: #F1EFE9;
+  background-color: #000000;
+  color: #F4F4F9;
   overflow-x: hidden;
+}
+
+/* Material Symbols Styling */
+.material-symbols-outlined {
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  vertical-align: middle;
+  line-height: 1;
 }
 
 /* Custom sleek scrollbar */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #101112;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2E3236;
-  border-radius: 3px;
+  background: #1C2529;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #474E54;
+  background: #04724D;
 }
 
-/* Accent glow effects */
-.glow-lime {
-  box-shadow: 0 0 25px -5px rgba(199, 243, 107, 0.25);
+/* Luxury Emerald Glows */
+.glow-emerald {
+  box-shadow: 0 0 35px -5px rgba(4, 114, 77, 0.45);
 }
 
-.glow-lime-sm {
-  box-shadow: 0 0 12px -2px rgba(199, 243, 107, 0.2);
+.glow-emerald-sm {
+  box-shadow: 0 0 15px -2px rgba(4, 114, 77, 0.35);
+}
+
+.glow-teal {
+  box-shadow: 0 0 25px -4px rgba(184, 219, 217, 0.25);
 }
 
 .glow-red {
-  box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.25);
+  box-shadow: 0 0 30px -4px rgba(220, 38, 38, 0.35);
 }
 
-.glow-amber {
-  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.25);
+/* Subtle Technical Grid Background */
+.bg-tech-grid {
+  background-size: 40px 40px;
+  background-image: 
+    linear-gradient(to right, rgba(88, 111, 124, 0.07) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(88, 111, 124, 0.07) 1px, transparent 1px);
 }
 
-/* Monospace font utility */
+/* Parallax Depth Layer */
+.parallax-layer {
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1);
+  will-change: transform;
+}
+
+/* Numbers Monospace */
 .font-mono-numbers {
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   font-feature-settings: "tnum" 1;
 }
 
-/* Custom slider thumb */
+/* Slider Custom Styling with Emerald Track & Thumb */
+input[type=range] {
+  -webkit-appearance: none;
+  background: #0E1315;
+  border: 1px solid #1C2529;
+  border-radius: 9999px;
+}
+
 input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 24px;
-  width: 24px;
+  height: 22px;
+  width: 22px;
   border-radius: 50%;
-  background: #C7F36B;
+  background: #04724D;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(199, 243, 107, 0.6);
-  border: 2px solid #101112;
+  box-shadow: 0 0 15px rgba(4, 114, 77, 0.8);
+  border: 2px solid #F4F4F9;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+input[type=range]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 25px rgba(4, 114, 77, 1);
 }
 
 input[type=range]::-moz-range-thumb {
-  height: 24px;
-  width: 24px;
+  height: 22px;
+  width: 22px;
   border-radius: 50%;
-  background: #C7F36B;
+  background: #04724D;
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(199, 243, 107, 0.6);
-  border: 2px solid #101112;
+  box-shadow: 0 0 15px rgba(4, 114, 77, 0.8);
+  border: 2px solid #F4F4F9;
 }
