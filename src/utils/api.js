@@ -1,0 +1,146 @@
+/**
+ * Client API connector for THE PLAN AUDIT backend
+ */
+
+export async function fetchCases() {
+  const res = await fetch('/api/cases');
+  if (!res.ok) throw new Error('Failed to fetch cases');
+  const data = await res.json();
+  return data.cases;
+}
+
+export async function fetchCaseDetails(caseId) {
+  const res = await fetch(`/api/cases/${caseId}`);
+  if (!res.ok) throw new Error(`Failed to fetch case details for ${caseId}`);
+  const data = await res.json();
+  return data.case;
+}
+
+export async function createSession(caseId, coupleMode = false) {
+  const res = await fetch('/api/audit/session/new', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ caseId, coupleMode }),
+  });
+  if (!res.ok) throw new Error('Failed to create audit session');
+  const data = await res.json();
+  return data.session;
+}
+
+export async function fetchSession(sessionId) {
+  const res = await fetch(`/api/audit/session/${sessionId}`);
+  if (!res.ok) throw new Error('Failed to fetch session');
+  const data = await res.json();
+  return data.session;
+}
+
+export async function submitInterrogationAnswer(sessionId, answer) {
+  const res = await fetch('/api/audit/interrogate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, answer }),
+  });
+  if (!res.ok) throw new Error('Failed to submit answer');
+  return res.json();
+}
+
+export async function fetchSummary(sessionId) {
+  const res = await fetch('/api/audit/summary', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) throw new Error('Failed to fetch summary');
+  const data = await res.json();
+  return data.summary;
+}
+
+export async function fetchReveal(sessionId) {
+  const res = await fetch('/api/audit/reveal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) throw new Error('Failed to generate reveal');
+  const data = await res.json();
+  return data.reveal;
+}
+
+export async function submitUnderstandingCheck(sessionId, discoveryId, choice, userComment = '') {
+  const res = await fetch('/api/audit/discovery/check', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, discoveryId, choice, userComment }),
+  });
+  if (!res.ok) throw new Error('Failed to submit check');
+  return res.json();
+}
+
+export async function fetchVerdict(sessionId) {
+  const res = await fetch('/api/audit/verdict', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) throw new Error('Failed to fetch verdict');
+  const data = await res.json();
+  return data.verdict;
+}
+
+export async function fetchMission(sessionId) {
+  const res = await fetch('/api/audit/mission', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) throw new Error('Failed to generate mission');
+  const data = await res.json();
+  return data.mission;
+}
+
+export async function submitMissionAcceptance(sessionId, decision, reason = '') {
+  const res = await fetch('/api/audit/mission/accept', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, decision, reason }),
+  });
+  if (!res.ok) throw new Error('Failed to submit mission decision');
+  return res.json();
+}
+
+export async function submitFollowUp(sessionId, day, status, details = '') {
+  const res = await fetch('/api/audit/followup', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, day, status, details }),
+  });
+  if (!res.ok) throw new Error('Failed to submit follow-up');
+  const data = await res.json();
+  return data.followUp;
+}
+
+export async function fetchAdvisorBriefing(sessionId) {
+  const res = await fetch('/api/audit/briefing', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId }),
+  });
+  if (!res.ok) throw new Error('Failed to generate advisor briefing');
+  const data = await res.json();
+  return data.briefing;
+}
+
+export async function fetchUsageStats() {
+  const res = await fetch('/api/monitor/usage');
+  if (!res.ok) throw new Error('Failed to fetch usage stats');
+  return res.json();
+}
+
+export async function toggleMockMode(enabled) {
+  const res = await fetch('/api/monitor/mock-mode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ enabled }),
+  });
+  return res.json();
+}

@@ -1,0 +1,22 @@
+{
+  "totalRequests": 1,
+  "successfulRequests": 1,
+  "failedRequests": 0,
+  "totalPromptTokens": 397,
+  "totalCompletionTokens": 868,
+  "totalCostUSD": 0.00183525,
+  "calls": [
+    {
+      "id": "gen-1794509812-woQW8lWsk8gNFDy8fqhO",
+      "timestamp": "2026-11-12T18:56:59.927Z",
+      "model": "gpt-5-mini",
+      "purpose": "interrogation_summary",
+      "stage": "interrogation",
+      "latencyMs": 7685,
+      "promptTokens": 397,
+      "completionTokens": 868,
+      "cost": 0.00183525,
+      "success": true
+    }
+  ]
+}
