@@ -48,7 +48,7 @@ export function inspectPlan(document) {
 }
 
 function displayMetric(raw) {
-  const format = number => typeof number === 'number' ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(number) : String(number);
+  const format = number => typeof number === 'number' ? new Intl.NumberFormat('en-US', { maximumFractionDigits: 20 }).format(number) : String(number);
   const value = raw.value ?? (raw.min !== undefined && raw.max !== undefined ? `${format(raw.min)}–${format(raw.max)}` : null);
   if (value === null) return '';
   if (raw.unit === 'USD' || raw.unit === 'USD/yr') return `$${format(value)}${raw.unit === 'USD/yr' ? ' / year' : ''}`;
@@ -102,12 +102,16 @@ export function normalizePlan(document, { id, filename = 'financial-health.json'
   if (score === null && !evidence.length) throw new Error('No usable plan content found. Map a summary, recommendations or a financial health score before importing.');
   const warning = evidence.find(item => /\/savingsRunOut$/.test(item.source.path) && /run(?:s)? out at age \d+/i.test(item.title) && !/\b(?:not|never)\b/i.test(item.title));
   const recommendations = textValue(read('recommendations'));
+  const actions = (Array.isArray(root.score?.top_moves) ? root.score.top_moves : []).flatMap((move, index) => {
+    if (!object(move) || !textValue(move.title) || !textValue(move.action)) return [];
+    return [{ title: move.title, action: move.action, source: { document: filename, path: `${inspection.rootPath}/score/top_moves/${index}`, raw: move } }];
+  });
   return {
     id, meta: { name, partners, coupleMode: partners.length >= 2, subtitle: '', description: '', hook: '' },
     score, scoreSource: score === null ? null : { document: filename, path: assigned.score, raw: score }, band: textValue(root.score?.band) || null,
     household, city: textValue(root.case?.city), state: textValue(root.case?.state),
     narrative: { ...(root.narrative || {}), summary_main: textValue(read('summary')), summary_recommendations: recommendations },
-    facts: root.key_metrics?.facts || {}, ratios: root.key_metrics?.ratios || {}, evidence, recommendations,
+    facts: root.key_metrics?.facts || {}, ratios: root.key_metrics?.ratios || {}, evidence, recommendations, actions,
     recommendationSource: recommendations ? { document: filename, path: assigned.recommendations, raw: recommendations } : null,
     scoreContext: score !== null && score >= 80 && warning ? { evidenceId: warning.id, title: 'A strong score. A longer story.', explanation: 'Your overall score and your retirement projection answer different questions. Read both before deciding what to do next.' } : null,
     importInfo: { recognized: inspection.recognized, missing: [score === null ? 'Financial health score' : '', !recommendations ? 'Plan recommendations' : '', !household.length ? 'Household members' : ''].filter(Boolean) },

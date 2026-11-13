@@ -26,7 +26,7 @@ app.use((err, req, res, next) => {
 });
 
 // Persistent sessions folder
-const SESSIONS_DIR = path.resolve(here, '../data/sessions');
+const SESSIONS_DIR = process.env.AUDIT_SESSIONS_DIR || path.resolve(here, '../data/sessions');
 if (!fs.existsSync(SESSIONS_DIR)) {
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
 }
@@ -150,6 +150,17 @@ app.post('/api/audit/reveal', async (req, res) => {
   }
 });
 
+app.post('/api/audit/route', (req, res) => {
+  try {
+    const { sessionId, discoveryId } = req.body;
+    const reveal = auditEngine.chooseRoute(sessionId, discoveryId);
+    persistSessionToFile(auditEngine.getSession(sessionId));
+    res.json({ success: true, reveal });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
 // 7. Check user understanding on a discovery
 app.post('/api/audit/discovery/check', async (req, res) => {
   try {
@@ -159,6 +170,17 @@ app.post('/api/audit/discovery/check', async (req, res) => {
     res.json(result);
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/audit/discovery/explore', async (req, res) => {
+  try {
+    const { sessionId, discoveryId, question } = req.body;
+    const exploration = await auditEngine.exploreDiscovery(sessionId, discoveryId, question);
+    persistSessionToFile(auditEngine.getSession(sessionId));
+    res.json({ success: true, exploration });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 
@@ -187,10 +209,10 @@ app.post('/api/audit/mission', async (req, res) => {
 });
 
 // 10. Accept / reject mission
-app.post('/api/audit/mission/accept', (req, res) => {
+app.post('/api/audit/mission/accept', async (req, res) => {
   try {
     const { sessionId, decision, reason } = req.body;
-    const result = auditEngine.handleMissionAcceptance(sessionId, decision, reason);
+    const result = await auditEngine.handleMissionAcceptance(sessionId, decision, reason);
     persistSessionToFile(auditEngine.getSession(sessionId));
     res.json(result);
   } catch (err) {

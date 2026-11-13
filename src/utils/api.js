@@ -66,6 +66,18 @@ export async function fetchReveal(sessionId) {
   return data.reveal;
 }
 
+export async function chooseRoute(sessionId, discoveryId) {
+  const res = await fetch('/api/audit/route', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, discoveryId }) });
+  if (!res.ok) throw new Error('Failed to choose route');
+  return (await res.json()).reveal;
+}
+
+export async function exploreDiscovery(sessionId, discoveryId, question) {
+  const res = await fetch('/api/audit/discovery/explore', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ sessionId, discoveryId, question }) });
+  if (!res.ok) throw new Error('Failed to explore finding');
+  return (await res.json()).exploration;
+}
+
 export async function submitUnderstandingCheck(sessionId, discoveryId, choice, userComment = '') {
   const res = await fetch('/api/audit/discovery/check', {
     method: 'POST',

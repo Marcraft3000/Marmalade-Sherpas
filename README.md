@@ -1,126 +1,70 @@
-# THE PLAN AUDIT ⚡
-### AI-Powered Interactive Financial Audit — Sherpas x UPV Sigma Data Club Hackathon 2026
-**Team:** Marmalade | **Event:** Hackathon UPV 2026 | **Live Server:** `http://localhost:3001`
+# The Plan Audit
 
----
+An interactive explanation of an existing financial plan: the client gives their perspective first, then sees the plan in context and chooses a next step.
 
-## 01. The Product Vision
+## Run locally
 
-**THE PLAN AUDIT** turns the final, hardest step of financial planning into an unforgettable, interactive experience inspired by the entertainment and accountability format of Caleb Hammer’s *Financial Audit*.
+Requires Node.js 22+.
 
-Instead of dumping 30 pages of charts or a generic guided tour on families, THE PLAN AUDIT uses a core psychological mechanic:
-
-> ### **EXPECTATION VS. REALITY**
-> The family is interrogated about what they *think* is happening with their money **before** seeing any financial conclusions. Only after capturing their subjective perceptions, assumptions, and anxieties does the auditor reveal the official Sherpas plan reality.
-
-The contrast between what they believed and what the cold, hard numbers prove creates the central emotional moment. That discovery is immediately channeled into **ONE concrete, grounded mission** with ongoing 3-day and 30-day follow-up accountability.
-
----
-
-## 02. The 5 Mandatory Stages
-
-1. **STAGE 1 — THE INTERROGATION (Expectations First)**
-   - The auditor introduces itself: direct, witty, sarcastic yet deeply empathetic.
-   - Interactive 0–100 perceived health slider with live reactive commentary.
-   - Financial confidence evaluation, main concern selector + custom voice dictation, and immediate priorities.
-   - **Couple Mode:** Dual-partner perspective comparison for Timothy & Melanie Weah and Daniel & Emily Johnson.
-   - **Interrogation Summary:** *"Here is what I heard"* confirmation screen locking assumptions before the reveal.
-
-2. **STAGE 2 — THE REVEAL (The Reality Gap)**
-   - Suspense transition into the unmasking.
-   - **Giant Side-by-Side Comparison:** Predicted Score vs. Verified Sherpas Score vs. Mathematical Gap (e.g., `-25 PTS`).
-   - Personalized auditor reaction explicitly calling out what the user claimed in the interrogation.
-   - 2–3 deep discoveries with verified numbers from Sherpas plan facts (`financial-health.json`), plain English breakdowns, and interactive understanding checks.
-
-3. **STAGE 3 — THE VERDICT**
-   - **What You're Doing Right:** Honest validation of real strengths.
-   - **What Needs Immediate Attention:** The primary financial leak or hazard.
-   - **What You May Be Overlooking:** The underlying psychological or structural blind spot.
-   - **The Bottom Line:** One memorable Caleb Hammer punchline.
-
-4. **STAGE 4 — THE MISSION (Motivation to Act)**
-   - ONE high-leverage first step directly drawn from Sherpas recommendations.
-   - Concrete 4-step execution protocol, suggested timeframe (e.g. 72 hours), objective verification criteria, and difficulty rating.
-   - User commitment: **ACCEPT MISSION** (with confetti celebration), **I NEED TO THINK**, or **DOESN'T WORK** (with obstacle capture).
-
-5. **STAGE 5 — THE FOLLOW-UP & ACCOUNTABILITY**
-   - **Day 3 Check-In:** *"Three days later. How's the mission going?"* (Done / Started / Haven't started / Roadblock).
-   - **Day 30 Check-In:** Long-term reflection on baseline shifts.
-   - **Fast Forward 30 Days (Demo Time Travel):** Prominent button for judges to simulate the passage of time and observe dynamic accountability responses.
-   - Full session persistence surviving reloads.
-
----
-
-## 03. All 4 Mandatory Families Supported
-
-| Family | Score & Band | Context & Core Paradox |
-|---|---|---|
-| **Timothy & Melanie Weah** | **60** (Stable) | $150,800 accessible cash vs. $18,000 credit card at 18% APR ($270/mo interest bleed), $1.1M life insurance shortfall, $0 in 529 college funds. Dual-partner couple mode. |
-| **Michael Carter** | **26** (Critical) | $180,000 salary with -$8,336 negative annual cash flow, BMW loan, Amex at 20%, $30k cash. Ambitious goal to buy a $550k home in 2027 while trying to retire at 58 (savings run out at 85). |
-| **Daniel & Emily Johnson** | **52** (Vulnerable) | $560,000 mortgage, $18,000 credit card at 24.9% APR, two kids (Oliver 11, Sophia 9), and a $1,350,000 life insurance protection void. Dual-partner couple mode. |
-| **Samantha Lewis** | **82** (Strong) | $250,000 income, completely debt-free, $2M coverage. **The Hidden Cliff:** Living map projections reveal savings run out at age 73 ($1.45M deficit) with an unsustainable 12.2% retirement draw rate when college and 2030 home collide. |
-
----
-
-## 04. Key Innovations & Differentiators
-
-- **Zero-Token Protection Mode:** Integrated dev console with a 1-click toggle to run in 100% verified instant local mock mode ($0.00 spent) or switch to live OpenAI-compatible proxy calls (`gpt-5-mini` / `gemini-3.5-flash-lite`).
-- **Free Built-in Voice Engine:** Web Speech API text-to-speech for the Caleb Hammer auditor + speech recognition for user microphone dictation. Zero credits consumed, 100% reliable during live presentations.
-- **Paraplanner & Advisor Briefing:** Generates an executive pre-meeting intelligence sheet strictly distinguishing **[FACT]**, **[USER STATEMENT]**, **[INTERPRETATION]**, and **[AGENDA]**.
-- **Financial Trust & Integrity:** Never invents numbers. All figures, interest rates, and balances come directly from official Sherpas plan files.
-
----
-
-## 05. How to Run the Application
-
-### Prerequisites
-- Node.js 20 or later (Tested on Node.js v24)
-- npm 10 or later
-
-### Quick Start (1 Command)
-```bash
-# 1. Install dependencies
+```sh
 npm install
-
-# 2. Build and launch fullstack server on port 3001
 npm run build
 npm start
 ```
-Then open your browser to **`http://localhost:3001`**.
 
-### Development Mode (Hot Reload)
-```bash
-# Runs backend with nodemon/node on port 3001 and Vite client on port 5173
-npm run dev
+The server serves the built app on `http://localhost:3001`. Configure `.env` using `.env.example`. `MOCK_AI=true` runs evidence selection without any model calls. The API key stays on the server.
+
+For frontend development, run `npm run dev` in one terminal and `npm run dev:client` in another, then open `http://localhost:5173`. The Express server alone does **not** provide frontend hot reload. Restart it after backend changes; rebuild if viewing port 3001.
+
+## The experience
+
+1. One question at a time. Household members give separate score estimates; concerns and priorities are a shared response. A fifth question follows a topic in the imported plan without revealing its score or figures. Draft answers survive refresh.
+2. A recap preserves the client’s exact words and lets them edit their answers.
+3. The reveal starts with those words, a short skippable transition, and the plan’s score. Reduced-motion preferences skip the pause.
+4. The client can choose which source-backed finding to explore first. This changes the first finding and can change the preparation step. Findings appear individually with a contextual reflection question. Switch between **In plain language** and **Numbers & context**, ask a question for a deeper explanation, listen with browser speech, or open a readable source summary in an accessible Radix dialog. Technical pointers, replacement keys, and raw JSON remain out of the client-facing panel.
+5. A high score is contextualized by a retirement depletion finding only when that finding is actually in the plan. No client-name-specific story or age is embedded in the application.
+6. Select a preparation step based on an original plan recommendation, record a barrier and receive a contextual response, then try clearly labelled day 3 and day 30 check-ins. AI can phrase the preparation questions and respond to the client's reported progress; the actions themselves are self-reported.
+
+Questions saved for the advisor are included in the briefing. A rejected action records the barrier; it does not claim to have generated a new financial recommendation.
+
+## Importing other clients
+
+Use **Import a client plan** on the client list. Upload one client’s JSON export (up to 4.8 MB), review the detected fields, and add the client.
+
+- Standard Sherpas financial-health exports are detected at the root or inside an enclosing object/array. Optional fields may be absent.
+- Other layouts use explicit field mapping for client name, health score, household, summary and recommendations. Field locations use JSON Pointer internally; the selector lists available fields.
+- Scores must be numeric and use a 0–100 scale. Missing scores stay missing, including in the briefing; zero remains zero.
+- Labelled metrics with `label`, `value` (or `min`/`max`), and optional `unit`, `period`, `basis`, and `note` are read directly. Narrative-only plans can be explored through their mapped text.
+- Unknown field semantics are **not** guessed. An export with differently structured unlabelled metrics needs an adapter or the relevant text mapped before those metrics can become findings. No application can reliably infer the meaning of an arbitrary JSON value solely from its position.
+- One client per import: multiple recognized financial-health plans in the same file produce an explicit error. Unsupported shapes and invalid mappings also produce actionable errors.
+- Generic household arrays use `first_name` or `name`, and explicit roles `client`, `spouse`, `partner`, `co-client` or `coclient`. Children are not treated as partners; missing roles do not create a fictitious second perspective.
+- The original source location and value are retained for each finding. Imports persist under `data/imports/`; sessions persist under `data/sessions/`. Both are excluded from git.
+
+Sample plans remain under `cases/<client-id>/financial-health.json`. The runtime does not contain a lookup table of family names or canned per-family findings. `server/planAdapter.mjs` owns schema interpretation, `server/casesService.mjs` owns storage, and `server/auditEngine.mjs` owns the flow.
+
+This is a local/demo app. The server’s client list is shared and has no authentication or tenant isolation. Add those controls before making real client plans available in a shared deployment.
+
+## Evidence and AI
+
+The model may choose relevant IDs from a bounded list of source-backed findings using the user's answers, pose reflection questions, explain one source-backed finding on request, and phrase preparation and follow-up prompts. It cannot supply the displayed score, amounts, quotations or source passages. Invalid IDs are discarded. Unrelated questions are rejected before a model call; if a relevant question cannot be answered because the model is unavailable, the app says so instead of repeating a generic finding as an answer. In mock mode, or if the request fails, topic matching and prepared text keep the rest of the journey usable.
+
+Explanation templates retain distinctions such as projections versus current balances, annual amounts versus lump sums, and reserves versus money available after goals. Unsupported or absent data is not replaced with another family’s plan. Original recommendations remain inspectable; the app does not recalculate the financial plan.
+
+AI usage in the developer monitor is an estimate recorded by this app, not the team's authoritative remaining proxy budget. The listening button uses browser speech; ElevenLabs is not connected and no ElevenLabs key is required. Day 3 and day 30 remain simulated demo check-ins, not scheduled notifications.
+
+## Validation
+
+```sh
+npm test
+npm run test:e2e
 ```
 
----
+Unit tests cover new clients, wrapped and mapped schemas, missing/zero scores, exact source pointers, edits, distinct partner scores, fabricated model IDs, and full lifecycle progression. Browser tests cover the desktop and mobile journeys, import mapping, reduced motion, dialog keyboard behavior and session restoration.
 
-## 06. Environment Variables (`.env`)
+Browser tests use Playwright with the installed Chrome browser, a separate local server on port 3107 and mock AI. Their data lives under ignored `data/test-*` directories; screenshots are under ignored `test-results/`.
 
-```env
-PORT=3001
-MCP_URL=https://mcp-hackathon.sherpaswealth.com/mcp
-MCP_TOKEN=your_token_here
-LLM_PROXY_URL=https://llm-hackathon.sherpaswealth.com
-TEAM_KEY=your_team_key_here
+## Hackathon
 
-# Zero-Token Protection: Keep true for free instant local testing, set false for live API
-MOCK_AI=true
+Challenge context: https://github.com/SherpasEngineering/hackathon-upv-2026
 
-OPENROUTER_PRIMARY_MODEL=gemini-3.5-flash-lite
-OPENROUTER_FAST_MODEL=gemini-3.5-flash-lite
-```
-
----
-
-## 07. Demo Walkthrough Script (2 Minutes for Judges)
-
-1. **Select Case:** Choose **Samantha Lewis** on the landing page (point out her strong 82 score).
-2. **Interrogation:** Move the slider to 90 ("Very Confident", concern: "Paying for college without loans").
-3. **Summary:** Confirm the assumptions captured.
-4. **The Reveal:** Show the -8 PT gap and reveal the **Age 73 Retirement Cliff** and **12.2% Withdrawal Rate**. Notice the auditor calls out her specific claim!
-5. **The Verdict:** Read the Bottom Line: *"You are winning the present, but on track to lose your future."*
-6. **The Mission:** Accept Mission 01 (*Establish The Retirement Defense Boundary*), triggering celebration confetti.
-7. **Demo Time Travel:** Click **"FAST FORWARD 30 DAYS"** to demonstrate Day 3 and Day 30 follow-up accountability.
-8. **Advisor Briefing:** Click **"Advisor Briefing"** in the top navigation to view the exportable paraplanner summary sheet with clear separation of facts and user statements.
+The synthetic sample households are provided by Sherpas. The application explains their existing plans; it is not a replacement for Sherpas’s calculations.

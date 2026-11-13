@@ -6,3 +6,7 @@ dist/
 *.log
 data/imports/
 data/sessions/
+data/test-*/
+test-results/
+playwright-report/
+.env.example
