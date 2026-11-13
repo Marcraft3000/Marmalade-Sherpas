@@ -1,11 +1,41 @@
 {
-  "totalRequests": 14,
+  "totalRequests": 17,
   "successfulRequests": 1,
-  "failedRequests": 13,
+  "failedRequests": 16,
   "totalPromptTokens": 397,
   "totalCompletionTokens": 868,
   "totalCostUSD": 0.00183525,
   "calls": [
+    {
+      "id": "fail-1794593455296",
+      "timestamp": "2026-11-13T18:10:55.296Z",
+      "model": "gpt-5-mini",
+      "purpose": "verdict_generation",
+      "stage": "verdict",
+      "latencyMs": 197,
+      "error": "401 LiteLLM Virtual Key expected. Received=your****here, expected to start with 'sk-'.",
+      "success": false
+    },
+    {
+      "id": "fail-1794593090571",
+      "timestamp": "2026-11-13T18:04:50.571Z",
+      "model": "gpt-5-mini",
+      "purpose": "reveal_generation",
+      "stage": "reveal",
+      "latencyMs": 64,
+      "error": "401 LiteLLM Virtual Key expected. Received=your****here, expected to start with 'sk-'.",
+      "success": false
+    },
+    {
+      "id": "fail-1794593088264",
+      "timestamp": "2026-11-13T18:04:48.264Z",
+      "model": "gpt-5-mini",
+      "purpose": "interrogation_summary",
+      "stage": "interrogation",
+      "latencyMs": 245,
+      "error": "401 LiteLLM Virtual Key expected. Received=your****here, expected to start with 'sk-'.",
+      "success": false
+    },
     {
       "id": "fail-1794524227970",
       "timestamp": "2026-11-12T22:57:07.970Z",

@@ -1,0 +1,99 @@
+{
+  "id": "audit_michael-carter_1794593069751",
+  "caseId": "michael-carter",
+  "caseName": "Michael Carter",
+  "isCoupleMode": false,
+  "activePartner": null,
+  "currentStage": "verdict",
+  "createdAt": "2026-11-13T18:04:29.752Z",
+  "updatedAt": "2026-11-13T18:10:55.298Z",
+  "expectedScore": 5,
+  "partnerScores": {},
+  "answers": [
+    {
+      "category": "perceived_health",
+      "question": "On a scale from 0 to 100, how healthy do you think your household finances are?",
+      "value": 5,
+      "partner": null,
+      "timestamp": "2026-11-13T18:04:47.958Z"
+    },
+    {
+      "category": "confidence",
+      "question": "How confident are you that you are making the right financial decisions?",
+      "value": "Stressed & Overwhelmed",
+      "timestamp": "2026-11-13T18:04:47.970Z"
+    },
+    {
+      "category": "main_concern",
+      "question": "What is the one financial thing that worries you the most?",
+      "value": "Building a plan I can stick to",
+      "timestamp": "2026-11-13T18:04:47.989Z"
+    },
+    {
+      "category": "financial_priority",
+      "question": "If you could fix one thing about your finances right now, what would it be?",
+      "value": "Reduce the stress around money decisions",
+      "timestamp": "2026-11-13T18:04:48.007Z"
+    }
+  ],
+  "summary": {
+    "expectedScore": 5,
+    "confidence": "Stressed & Overwhelmed",
+    "mainConcern": "Building a plan I can stick to",
+    "biggestPriority": "Reduce the stress around money decisions",
+    "auditorImpression": "You see your household as a solid 5/100 and believe your main hurdle is \"Building a plan I can stick to\". Let's see if the cold hard math backs that up.",
+    "keyBeliefs": [
+      "You rate your financial health at 5/100.",
+      "Your biggest priority right now is \"Reduce the stress around money decisions\".",
+      "You consider yourself stressed & overwhelmed confident in your financial path."
+    ]
+  },
+  "reveal": {
+    "expectedScore": 5,
+    "actualScore": 26,
+    "gap": -21,
+    "band": "critical",
+    "auditorReaction": "You expected a score of 5, but your official Sherpas financial health score is 26—placing you in the CRITICAL band. That is a brutal 21-point difference. Here is why: you earn a fantastic $180,000 salary, but your plan currently has a negative net cash flow of -$8,336 this year! Between car payments, student loans, credit card balances, and renting, your money is leaking out faster than you realize. Planning a $550,000 home purchase in 2027 alongside retiring at 58 is currently a collision course.",
+    "discoveries": [
+      {
+        "id": "carter-disc-1",
+        "title": "THE CASH FLOW CRACK",
+        "figure": "-$8,336 Annual Net Cash Flow",
+        "source": "Key Metrics — Cashflow Statement & Facts",
+        "explanation": "Despite earning $180,000 gross, your annual outflows exceed inflows by $8,336 this year. You are burning liquid reserves rather than building the down payment required for 2027.",
+        "whyItMatters": "A $550,000 home requires at least $110,000 in down payment and closing costs, but your accessible cash is currently only $30,000 against a $46,530 emergency requirement.",
+        "auditorRemark": "A $180,000 salary that burns $8,336 a year is not wealth accumulation; it is high-speed lifestyle inflation. We need to plug the leak before you sign a mortgage.",
+        "badge": "FACT"
+      },
+      {
+        "id": "carter-disc-2",
+        "title": "THE RETIREMENT COLLISION (AGE 85 CLIFF)",
+        "figure": "Savings Run Out at Age 85",
+        "source": "Key Metrics — Facts: Retirement Projections",
+        "explanation": "Retiring at 58 means 33 years of retirement where guaranteed income covers only 34% of your spending needs. If you buy the $550k home in 2027 without restructuring, your liquid investments deplete at age 85 leaving unpaid living expenses.",
+        "whyItMatters": "The house and the age-58 retirement are actively cannibalizing each other in your financial plan.",
+        "auditorRemark": "You can have the house, or you can have retirement at 58 on your current track. Having both right now is financial fiction unless we fix your savings rate today.",
+        "badge": "FACT"
+      },
+      {
+        "id": "carter-disc-3",
+        "title": "DEBT MULTIPLICATION",
+        "figure": "$28,500 Across 3 Debt Streams",
+        "source": "Key Metrics — Debt Overview (Vehicle, Student, Amex)",
+        "explanation": "You are paying $950/month across a BMW 3 Series ($500/mo, $15k balance), Student Loan ($250/mo, $10k balance), and Amex Platinum ($200/mo, $3,500 balance at 20%).",
+        "whyItMatters": "That is $11,400 per year dedicated purely to debt service that could otherwise be funding your home down payment.",
+        "auditorRemark": "That BMW and Amex are costing you nearly a thousand dollars every single month. That is your future down payment driving down the highway.",
+        "badge": "FACT"
+      }
+    ]
+  },
+  "verdict": {
+    "doingRight": "You have exceptional earning power ($180,000), you are actively saving into your 401(k) up to employer match, and you have clear ambitious goals.",
+    "needsAttention": "Your monthly budget is running a deficit (-$8,336/yr), your cash is below the 5-month emergency target ($30k vs $46k), and your debt service consumes $950/month.",
+    "overlooking": "Your timeline is compressed: buying a $550,000 home in January 2027 while paying consumer debt guarantees that you will fall short of an early retirement at 58.",
+    "bottomLine": "You earn like a winner, but your cash flow is leaking like a sieve. Close the $8k deficit, eliminate the consumer debt, and reset the home timeline so you can actually retire at 58."
+  },
+  "mission": null,
+  "followUpHistory": [],
+  "simulatedDay": 0
+}
