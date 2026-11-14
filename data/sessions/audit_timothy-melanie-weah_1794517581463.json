@@ -1,0 +1,99 @@
+{
+  "id": "audit_timothy-melanie-weah_1794517581463",
+  "caseId": "timothy-melanie-weah",
+  "caseName": "Timothy & Melanie Weah",
+  "isCoupleMode": true,
+  "activePartner": "Timothy",
+  "currentStage": "reveal",
+  "createdAt": "2026-11-12T21:06:21.463Z",
+  "updatedAt": "2026-11-12T21:06:28.519Z",
+  "expectedScore": 50,
+  "partnerScores": {
+    "Timothy": 50
+  },
+  "answers": [
+    {
+      "category": "perceived_health",
+      "question": "How do things feel, financially?",
+      "value": 50,
+      "partner": null,
+      "timestamp": "2026-11-12T21:06:27.734Z"
+    },
+    {
+      "category": "confidence",
+      "question": "How confident do you feel about your decisions?",
+      "value": "Feeling overwhelmed",
+      "partner": null,
+      "timestamp": "2026-11-12T21:06:27.737Z"
+    },
+    {
+      "category": "main_concern",
+      "question": "What’s the thought you keep coming back to?",
+      "value": "Preparing for the unexpected",
+      "partner": null,
+      "timestamp": "2026-11-12T21:06:27.738Z"
+    },
+    {
+      "category": "financial_priority",
+      "question": "What would you most like to change?",
+      "value": "Plan confidently for the long term",
+      "partner": null,
+      "timestamp": "2026-11-12T21:06:27.741Z"
+    }
+  ],
+  "summary": {
+    "expectedScore": 50,
+    "confidence": "Feeling overwhelmed",
+    "mainConcern": "Preparing for the unexpected",
+    "biggestPriority": "Plan confidently for the long term",
+    "auditorImpression": "You see your household as a solid 50/100 and believe your main hurdle is \"Preparing for the unexpected\". Let's see if the cold hard math backs that up.",
+    "keyBeliefs": [
+      "You rate your financial health at 50/100.",
+      "Your biggest priority right now is \"Plan confidently for the long term\".",
+      "You consider yourself feeling overwhelmed confident in your financial path."
+    ]
+  },
+  "reveal": {
+    "expectedScore": 50,
+    "actualScore": 60,
+    "gap": -10,
+    "band": "stable",
+    "auditorReaction": "You estimated a score of 50, and Sherpas clocks you at 60 (-10 gap). You have tremendous income and liquid assets, but an 18% credit card and an open $1.1M life insurance shortfall are dragging down an otherwise strong foundation.",
+    "discoveries": [
+      {
+        "id": "weah-disc-1",
+        "title": "THE 18% PARADOX",
+        "figure": "$18,000 at 18.0% APR",
+        "source": "Key Metrics — Debt Management & Cashflow Statement",
+        "explanation": "You hold $150,800 in accessible liquid cash, but carry an $18,000 credit card balance at 18% APR. Your monthly payment of $300 sends $270 directly to interest charges, keeping you on a 12-year treadmill until 2039 unless restructured.",
+        "whyItMatters": "Your cash above the full 9-month emergency reserve ($84,577) is over $60,000. Holding onto high-interest credit card debt when you have free cash is effectively paying 18% guaranteed penalty fees.",
+        "auditorRemark": "Your savings are doing a heroic job sitting there. Your credit card, meanwhile, is working overtime against you. Let us stop paying the bank an 18% subscription fee for keeping cash in a checking account.",
+        "badge": "FACT"
+      },
+      {
+        "id": "weah-disc-2",
+        "title": "THE $1,100,000 PROTECTION VOID",
+        "figure": "$1,100,000 Coverage Shortfall",
+        "source": "Key Metrics — Life Insurance Coverage Analysis",
+        "explanation": "Timothy has $140,000 in coverage (shortfall of $610,000) and Melanie has $110,000 in coverage (shortfall of $490,000). With Liam (6) and Josh (3) relying on both high incomes, existing coverage covers less than 1 year of earnings.",
+        "whyItMatters": "If either earner experiences an unexpected life event, household cash flow would face an immediate deficit before Liam and Josh even reach middle school.",
+        "auditorRemark": "You have protected your peace of mind with cash, but left your children unprotected against the one catastrophe cash cannot absorb alone.",
+        "badge": "FACT"
+      },
+      {
+        "id": "weah-disc-3",
+        "title": "THE EMPTY 529 ACCOUNTS",
+        "figure": "$0 in 529 College Accounts",
+        "source": "Key Metrics — Education Savings Gap ($113,508)",
+        "explanation": "Liam enters college in August 2038 and Josh in August 2041. Total projected inflation-adjusted funding gap is $113,508.60, requiring $4,609/year in dedicated savings starting today.",
+        "whyItMatters": "Every year of delay means college funding will collide with your peak retirement accumulation window.",
+        "auditorRemark": "College seems far away until it is next August. Setting up the automatic contribution today is vastly cheaper than liquidating brokerage assets in 2038.",
+        "badge": "FACT"
+      }
+    ]
+  },
+  "verdict": null,
+  "mission": null,
+  "followUpHistory": [],
+  "simulatedDay": 0
+}

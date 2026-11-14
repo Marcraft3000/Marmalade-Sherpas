@@ -1,0 +1,26 @@
+{
+  "id": "audit_413bcc6a-0075-4a86-80f3-8c69792be0dc",
+  "version": 2,
+  "caseId": "michael-carter",
+  "caseName": "Michael",
+  "isCoupleMode": false,
+  "partners": [],
+  "focusPrompt": {
+    "question": "What would you most want your family to be protected against?",
+    "topic": "protection"
+  },
+  "currentStage": "interrogation",
+  "createdAt": "2026-11-13T17:59:14.147Z",
+  "updatedAt": "2026-11-13T17:59:14.147Z",
+  "expectedScore": null,
+  "partnerScores": {},
+  "answers": [],
+  "summary": null,
+  "reveal": null,
+  "verdict": null,
+  "mission": null,
+  "followUpHistory": [],
+  "understandingChecks": [],
+  "explorations": [],
+  "simulatedDay": 0
+}

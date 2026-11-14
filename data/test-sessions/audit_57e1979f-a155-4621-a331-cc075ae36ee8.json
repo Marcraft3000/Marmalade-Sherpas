@@ -1,0 +1,100 @@
+{
+  "id": "audit_57e1979f-a155-4621-a331-cc075ae36ee8",
+  "version": 2,
+  "caseId": "import-c3f73505-8463-4d40-903e-d918b75a184e",
+  "caseName": "Jordan Test",
+  "isCoupleMode": false,
+  "partners": [],
+  "currentStage": "reveal",
+  "createdAt": "2026-11-12T20:49:15.269Z",
+  "updatedAt": "2026-11-12T20:49:15.532Z",
+  "expectedScore": 50,
+  "partnerScores": {},
+  "answers": [
+    {
+      "category": "perceived_health",
+      "value": 50,
+      "question": "How do things feel, financially?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:49:15.476Z"
+    },
+    {
+      "category": "confidence",
+      "value": "Somewhat confident",
+      "question": "How confident do you feel about your decisions?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:49:15.480Z"
+    },
+    {
+      "category": "main_concern",
+      "value": "I want to feel secure when I retire.",
+      "question": "What’s the thought you keep coming back to?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:49:15.482Z"
+    },
+    {
+      "category": "financial_priority",
+      "value": "Plan confidently for the long term",
+      "question": "What would you most like to change?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:49:15.487Z"
+    }
+  ],
+  "summary": {
+    "expectedScore": 50,
+    "partnerScores": {},
+    "confidence": "Somewhat confident",
+    "mainConcern": "I want to feel secure when I retire.",
+    "biggestPriority": "Plan confidently for the long term",
+    "auditorImpression": "These are your words. Keep them in mind as we open the plan together.",
+    "keyBeliefs": [
+      "I want to feel secure when I retire.",
+      "Plan confidently for the long term"
+    ]
+  },
+  "reveal": {
+    "version": 2,
+    "expectedScore": 50,
+    "partnerScores": {},
+    "actualScore": null,
+    "scoreSource": null,
+    "gap": null,
+    "band": null,
+    "userQuote": {
+      "text": "I want to feel secure when I retire.",
+      "category": "main_concern",
+      "partner": null
+    },
+    "priorityQuote": "Plan confidently for the long term",
+    "scoreContext": null,
+    "missing": [
+      "Financial health score",
+      "Plan recommendations",
+      "Household members"
+    ],
+    "auditorReaction": "This export does not include a financial health score. We can still explore what the plan actually says.",
+    "discoveries": [
+      {
+        "id": "e-summary",
+        "title": "The bigger picture",
+        "figure": "",
+        "badge": "PLAN TEXT",
+        "explanation": "Discuss the timing of your goals with your advisor.",
+        "whyItMatters": "This passage comes directly from your plan.",
+        "source": {
+          "document": "different-client.json",
+          "path": "/content",
+          "raw": "Discuss the timing of your goals with your advisor.",
+          "basis": "",
+          "period": ""
+        }
+      }
+    ]
+  },
+  "verdict": null,
+  "mission": null,
+  "followUpHistory": [],
+  "understandingChecks": [],
+  "simulatedDay": 0,
+  "briefing": null
+}
