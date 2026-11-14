@@ -23,7 +23,9 @@ import {
   submitMissionAcceptance,
   submitFollowUp,
   fetchAdvisorBriefing,
-  fetchUsageStats
+  fetchUsageStats,
+  invitationPath,
+  openInvitation,
 } from './utils/api';
 import { chooseRoute } from './utils/api';
 import { speechService } from './utils/speech';
@@ -49,6 +51,7 @@ export default function App() {
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [mockMode, setMockMode] = useState(true);
+  const [publicDemo, setPublicDemo] = useState(false);
 
   function switchStage(next) {
     if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -62,20 +65,21 @@ export default function App() {
   useEffect(() => {
     async function init() {
       try {
-        const [loadedCases, stats] = await Promise.all([
-          fetchCases(),
+        const [initial, stats] = await Promise.all([
+          invitationPath ? openInvitation() : fetchCases(),
           fetchUsageStats().catch(() => ({ mockMode: true }))
         ]);
-        setCases(loadedCases);
+        if (!invitationPath) setCases(initial);
+        setPublicDemo(stats?.publicDemo === true);
         if (stats && typeof stats.mockMode === 'boolean') {
           setMockMode(stats.mockMode);
         }
 
         // Restore active session if present in localStorage
-        const savedSessionId = localStorage.getItem('the_plan_audit_session_id');
-        if (savedSessionId) {
+        const savedSessionId = invitationPath ? null : localStorage.getItem('the_plan_audit_session_id');
+        if (invitationPath || savedSessionId) {
           try {
-            const restored = await fetchSession(savedSessionId);
+            const restored = invitationPath ? initial : await fetchSession(savedSessionId);
             if (restored?.version === 2) {
               setSession(restored);
               setStage(restored.currentStage || 'interrogation');
@@ -90,7 +94,7 @@ export default function App() {
           }
         }
       } catch (err) {
-        setError('We could not load the client list. Refresh to try again.');
+        setError(invitationPath ? 'This invitation could not be opened. Try again or ask your advisor for a new link.' : 'We could not load the client list. Refresh to try again.');
         console.error('Initialization error:', err);
       } finally {
         setLoading(false);
@@ -124,13 +128,13 @@ export default function App() {
   };
 
   // 2. Complete Interrogation & View Summary
-  const handleCompleteInterrogation = async (answers, expectedScore) => {
+  const handleCompleteInterrogation = async (answers) => {
     try {
       // Save all answers
-      for (const ans of answers) {
-        await submitInterrogationAnswer(session.id, ans);
+      if (!invitationPath) {
+        for (const ans of answers) await submitInterrogationAnswer(session.id, ans);
       }
-      const summary = await fetchSummary(session.id);
+      const summary = await fetchSummary(session.id, invitationPath ? answers.at(-1) : undefined);
       setInterrogationSummary(summary);
       setSession(await fetchSession(session.id));
       switchStage('summary');
@@ -268,11 +272,11 @@ export default function App() {
         onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
         onOpenCostMonitor={() => setIsCostModalOpen(true)}
         onTimeTravel={handleTimeTravel}
-        onResetSession={handleResetSession}
+        onResetSession={invitationPath ? undefined : handleResetSession}
         mockMode={mockMode}
-        showCostMonitor={import.meta.env.DEV}
+        showCostMonitor={import.meta.env.DEV && !invitationPath}
         canTimeTravel={Boolean(missionData)}
-        canOpenBriefing={Boolean(revealData)}
+        canOpenBriefing={!invitationPath && Boolean(revealData)}
       />
 
       {/* Main Content Body */}
@@ -288,8 +292,8 @@ export default function App() {
           </div>
         ) : (
           <>
-            {stage === 'case_selection' && (
-              <CaseSelection cases={cases} onSelectCase={handleSelectCase} onImported={async () => setCases(await fetchCases())} />
+            {stage === 'case_selection' && !invitationPath && (
+              <CaseSelection cases={cases} onSelectCase={handleSelectCase} onImported={async () => setCases(await fetchCases())} publicDemo={publicDemo} />
             )}
 
             {stage === 'interrogation' && session && (
@@ -297,6 +301,7 @@ export default function App() {
                 session={session}
                 caseData={cases.find(c => c.id === session.caseId)}
                 onCompleteInterrogation={handleCompleteInterrogation}
+                onSaveAnswer={invitationPath ? answer => submitInterrogationAnswer(session.id, answer) : undefined}
                 isMuted={isMuted}
               />
             )}
@@ -343,8 +348,8 @@ export default function App() {
                 session={session}
                 mission={missionData}
                 onSubmitFollowUp={handleSubmitFollowUp}
-                onResetAudit={handleResetSession}
-                onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
+                onResetAudit={invitationPath ? undefined : handleResetSession}
+                onOpenAdvisorBriefing={invitationPath ? undefined : handleOpenAdvisorBriefing}
               />
             )}
           </>

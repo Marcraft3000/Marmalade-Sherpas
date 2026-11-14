@@ -11,9 +11,17 @@ const questions = [
   { category: 'financial_priority', title: 'What would you most like to change?', note: 'Your priority will guide which parts of the plan we explore first.' },
   { category: 'future_expectation', title: 'What would make this feel clearer?', note: 'One more thought before we put your perspective beside the plan.' },
 ];
-export default function InterrogationStage({ session, onCompleteInterrogation }) {
+export default function InterrogationStage({ session, onCompleteInterrogation, onSaveAnswer }) {
   const key = `audit-draft-${session.id}`;
   const [draft, setDraft] = useState(() => {
+    if (onSaveAnswer) {
+      const answers = session.answers || [];
+      const partners = session.isCoupleMode ? session.partners : [null];
+      const unansweredPartner = partners.findIndex(partner => !answers.some(answer => answer.category === 'perceived_health' && answer.partner === partner));
+      if (unansweredPartner >= 0) return { step: 0, partnerIndex: unansweredPartner, answers, value: '' };
+      const unansweredQuestion = questions.findIndex((question, index) => index > 0 && !answers.some(answer => answer.category === question.category));
+      return { step: unansweredQuestion < 0 ? 0 : unansweredQuestion, partnerIndex: 0, answers, value: '' };
+    }
     try { const saved = JSON.parse(localStorage.getItem(key)); if (saved && Array.isArray(saved.answers) && saved.step >= 0 && saved.step <= 4) return saved; } catch {}
     return { step: 0, partnerIndex: 0, answers: session.answers || [], value: '' };
   });
@@ -24,14 +32,26 @@ export default function InterrogationStage({ session, onCompleteInterrogation })
   const question = draft.step === 4 ? { ...questions[4], title: session.focusPrompt?.question || questions[4].title } : questions[draft.step];
   const saved = [...draft.answers].reverse().find(a => a.category === question.category && (a.partner || null) === partner);
   const value = draft.value !== '' ? draft.value : saved?.value ?? (draft.step === 0 ? 50 : '');
-  useEffect(() => { localStorage.setItem(key, JSON.stringify(draft)); }, [draft, key]);
+  useEffect(() => {
+    if (!onSaveAnswer) localStorage.setItem(key, JSON.stringify(draft));
+  }, [draft, key, onSaveAnswer]);
   async function next() {
     if (draft.step !== 0 && !String(value).trim()) return;
     const answer = { category: question.category, question: question.title, value: draft.step === 0 ? Number(value) : String(value).trim(), partner };
     const answers = [...draft.answers.filter(a => !(a.category === answer.category && (a.partner || null) === partner)), answer];
     setError('');
-    if (draft.step === 0 && draft.partnerIndex < partners.length - 1) return setDraft({ ...draft, answers, value: '', partnerIndex: draft.partnerIndex + 1 });
-    if (draft.step < 4) return setDraft({ ...draft, answers, step: draft.step + 1, value: '' });
+    if (draft.step < 4) {
+      if (onSaveAnswer && saved?.value !== answer.value) {
+        setBusy(true);
+        try { await onSaveAnswer(answer); }
+        catch {
+          setError('We could not save this answer. Please try again.');
+          return;
+        } finally { setBusy(false); }
+      }
+      if (draft.step === 0 && draft.partnerIndex < partners.length - 1) return setDraft({ ...draft, answers, value: '', partnerIndex: draft.partnerIndex + 1 });
+      return setDraft({ ...draft, answers, step: draft.step + 1, value: '' });
+    }
     setBusy(true);
     try { await onCompleteInterrogation(answers); localStorage.removeItem(key); }
     catch { setError('Your answers are still here. We could not save them. Please try again.'); }
@@ -39,7 +59,7 @@ export default function InterrogationStage({ session, onCompleteInterrogation })
   }
   function back() {
     if (draft.step === 0 && draft.partnerIndex > 0) setDraft({ ...draft, partnerIndex: draft.partnerIndex - 1, value: '' });
-    else if (draft.step > 0) setDraft({ ...draft, step: draft.step - 1, value: '' });
+    else if (draft.step > 0) setDraft({ ...draft, step: draft.step - 1, partnerIndex: draft.step === 1 ? Math.max(0, partners.length - 1) : draft.partnerIndex, value: '' });
   }
   const choices = draft.step === 1 ? confidenceOptions : draft.step === 2 ? concerns : draft.step === 3 ? priorities : [];
   return <section className="conversation-stage">

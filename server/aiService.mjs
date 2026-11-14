@@ -69,7 +69,7 @@ export class AIService {
     this.primaryModel = process.env.OPENROUTER_PRIMARY_MODEL || 'gemini-3.5-flash-lite';
     this.fastModel = process.env.OPENROUTER_FAST_MODEL || 'gemini-3.5-flash-lite';
     // STRICT TOKEN PROTECTION: If MOCK_AI=true, no external API calls are made.
-    this.mockMode = process.env.MOCK_AI === 'true';
+    this.mockMode = process.env.PUBLIC_DEMO === 'true' || process.env.MOCK_AI === 'true';
 
     this.client = new OpenAI({
       baseURL: this.proxyUrl,

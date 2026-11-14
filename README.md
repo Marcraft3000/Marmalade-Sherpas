@@ -4,7 +4,7 @@ An interactive explanation of an existing financial plan: the client gives their
 
 ## Run locally
 
-Requires Node.js 22+.
+Requires Node.js 22.9 or later.
 
 ```sh
 npm install
@@ -15,6 +15,41 @@ npm start
 The server serves the built app on `http://localhost:3001`. Configure `.env` using `.env.example`. `MOCK_AI=true` runs evidence selection without any model calls. The API key stays on the server.
 
 For frontend development, run `npm run dev` in one terminal and `npm run dev:client` in another, then open `http://localhost:5173`. The Express server alone does **not** provide frontend hot reload. Restart it after backend changes; rebuild if viewing port 3001.
+
+## Deploy the public demo on Azure
+
+Create an Azure Web App with **Publish: Code**, **Operating System: Linux**, **Node 24 LTS**, and the **Free F1** plan. Turn on **HTTPS Only**, set the startup command to `npm start`, and add these app settings under **Settings → Environment variables**:
+
+| Setting | Value |
+| --- | --- |
+| `SCM_DO_BUILD_DURING_DEPLOYMENT` | `true` |
+| `PUBLIC_DEMO` | `true` |
+| `AUDIT_SESSIONS_DIR` | `/home/plan-audit/demo-sessions` |
+
+Azure builds the React frontend and Express serves it alongside `/api` on the same hostname. Public demo mode uses the sample plans and built-in responses. It needs no API credentials and blocks plan import and the live voice relay. The browser can still read the reveal aloud.
+
+From the repository root in PowerShell, create the source ZIP and deploy it using the Azure CLI:
+
+```powershell
+$auditZip = Join-Path ([System.IO.Path]::GetTempPath()) 'plan-audit-azure.zip'
+$samplePlans = Get-ChildItem -Path 'cases/*/financial-health.json' | ForEach-Object { 'cases/' + $_.Directory.Name + '/financial-health.json' }
+tar.exe -a -c -f $auditZip package.json package-lock.json index.html vite.config.js postcss.config.js tailwind.config.js src server $samplePlans
+if ($LASTEXITCODE -ne 0) { throw 'Could not create the deployment ZIP.' }
+
+az login
+az webapp deploy --resource-group '<resource-group>' --name '<web-app-name>' --src-path $auditZip --type zip
+```
+
+Use the default domain shown in the Web App overview. Verify `/api/health` and complete a sample audit from a private browser window. For client plans and personalized invitation links, add advisor authentication and per-session access controls before switching off public demo mode.
+
+### Enable the advisor workspace
+
+1. In your Supabase project, apply [the advisor migration](supabase/migrations/202611140001_advisor_portal.sql) once using SQL Editor.
+2. In **Authentication → Users**, create and confirm a test advisor. Allow that user into the workspace by running `insert into public.audit_advisors (user_id) values ('<Auth user UUID>');` in SQL Editor.
+3. Add `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` to the Azure Web App environment. For local testing, put these settings in your ignored `.env`. Keep the secret key on the server.
+4. Set `ADVISOR_PORTAL=true` and keep `PUBLIC_DEMO=true` on Azure. The advisor workspace opens at `/` and each invitation opens its audit directly. Links are valid for 30 days. Copy the link when it is created because the database stores its hash.
+
+Use a sample plan and fictional responses when verifying the flow. The advisor workspace accepts the bundled sample plans. Individual plans and secure plan imports can be added through the advisor workspace in a later release.
 
 ## The experience
 

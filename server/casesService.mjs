@@ -7,6 +7,7 @@ import { normalizePlan } from './planAdapter.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CASES_DIR = path.resolve(here, '../cases');
 const IMPORTS_DIR = process.env.PLAN_IMPORT_DIR || path.resolve(here, '../data/imports');
+const PUBLIC_DEMO = process.env.PUBLIC_DEMO === 'true';
 const imported = new Map();
 function read(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
@@ -16,16 +17,20 @@ function overview(plan) {
 }
 export function getAllCasesOverview() {
   const ids = fs.existsSync(CASES_DIR) ? fs.readdirSync(CASES_DIR).filter(id => fs.existsSync(path.join(CASES_DIR, id, 'financial-health.json'))) : [];
-  if (fs.existsSync(IMPORTS_DIR)) ids.push(...fs.readdirSync(IMPORTS_DIR).filter(file => /^import-[\w-]+\.json$/.test(file)).map(file => file.slice(0, -5)));
-  ids.push(...imported.keys());
+  if (!PUBLIC_DEMO) {
+    if (fs.existsSync(IMPORTS_DIR)) ids.push(...fs.readdirSync(IMPORTS_DIR).filter(file => /^import-[\w-]+\.json$/.test(file)).map(file => file.slice(0, -5)));
+    ids.push(...imported.keys());
+  }
   return [...new Set(ids)].map(getCaseDetails).filter(Boolean).map(overview);
 }
 export function getCaseDetails(caseId) {
   if (typeof caseId !== 'string' || !/^[\w-]+$/.test(caseId)) return null;
-  if (imported.has(caseId)) return imported.get(caseId);
-  const saved = read(path.join(IMPORTS_DIR, `${caseId}.json`));
-  if (saved) {
-    try { const result = normalizePlan(saved.document, { ...saved.options, id: caseId }); imported.set(caseId, result); return result; } catch { return null; }
+  if (!PUBLIC_DEMO) {
+    if (imported.has(caseId)) return imported.get(caseId);
+    const saved = read(path.join(IMPORTS_DIR, `${caseId}.json`));
+    if (saved) {
+      try { const result = normalizePlan(saved.document, { ...saved.options, id: caseId }); imported.set(caseId, result); return result; } catch { return null; }
+    }
   }
   const document = read(path.join(CASES_DIR, caseId, 'financial-health.json'));
   if (!document) return null;

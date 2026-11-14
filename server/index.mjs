@@ -10,15 +10,23 @@ import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM, importPlan } f
 import { inspectPlan } from './planAdapter.mjs';
 import { aiService } from './aiService.mjs';
 import { auditEngine } from './auditEngine.mjs';
+import { advisorPortalEnabled, configureAdvisorPortal, portalErrorHandler } from './advisorPortal.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3001);
+const PUBLIC_DEMO = process.env.PUBLIC_DEMO === 'true';
 const PROXY_URL = (process.env.LLM_PROXY_URL || 'https://llm-hackathon.sherpaswealth.com').replace(/\/$/, '');
 const TEAM_KEY = process.env.TEAM_KEY || '';
 const REALTIME_MODELS = ['gpt-realtime-2.1-mini', 'gpt-realtime-2.1', 'gemini-3.8-live'];
 
 const app = express();
-app.use(cors());
+if (PUBLIC_DEMO || advisorPortalEnabled) {
+  app.use(['/api/plans', '/api/monitor/mock-mode'], (req, res) => {
+    res.status(403).json({ success: false, error: 'This demo uses sample plans and built-in responses.' });
+  });
+} else {
+  app.use(cors());
+}
 app.use(express.json({ limit: '5mb' }));
 app.use((err, req, res, next) => {
   if (err) return res.status(err.status || 400).json({ success: false, error: err.type === 'entity.too.large' ? 'The JSON file must be smaller than 5 MB.' : 'Invalid JSON request.' });
@@ -26,7 +34,7 @@ app.use((err, req, res, next) => {
 });
 
 // Persistent sessions folder
-const SESSIONS_DIR = process.env.AUDIT_SESSIONS_DIR || path.resolve(here, '../data/sessions');
+const SESSIONS_DIR = process.env.AUDIT_SESSIONS_DIR || path.resolve(here, '../data', PUBLIC_DEMO ? 'demo-sessions' : 'sessions');
 if (!fs.existsSync(SESSIONS_DIR)) {
   fs.mkdirSync(SESSIONS_DIR, { recursive: true });
 }
@@ -45,7 +53,7 @@ function loadSessionsFromDisk() {
     const files = fs.readdirSync(SESSIONS_DIR).filter(f => f.endsWith('.json'));
     for (const f of files) {
       const data = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, f), 'utf8'));
-      if (data && data.id) {
+      if (data?.id && (!PUBLIC_DEMO || getCaseDetails(data.caseId))) {
         auditEngine.sessions.set(data.id, data);
       }
     }
@@ -54,7 +62,23 @@ function loadSessionsFromDisk() {
   }
 }
 
-loadSessionsFromDisk();
+if (!advisorPortalEnabled) loadSessionsFromDisk();
+
+configureAdvisorPortal(app);
+
+app.use('/api/audit', (req, res, next) => {
+  req.auditEngine ??= auditEngine;
+  next();
+});
+
+function saveSession(req, session) {
+  if (req.saveAuditSession) return req.saveAuditSession(session);
+  persistSessionToFile(session);
+}
+
+function sessionError(res, error, fallbackStatus = 500) {
+  res.status(error.status || fallbackStatus).json({ success: false, error: error.message });
+}
 
 // ==========================================
 // API ROUTES
@@ -67,6 +91,7 @@ app.get('/api/health', (req, res) => {
 
 // 1. Get all cases
 app.get('/api/cases', (req, res) => {
+  if (advisorPortalEnabled) return res.sendStatus(404);
   try {
     const cases = getAllCasesOverview();
     res.json({ success: true, cases });
@@ -87,6 +112,7 @@ app.post('/api/plans/import', (req, res) => {
 
 // 2. Get single case details
 app.get('/api/cases/:id', (req, res) => {
+  if (advisorPortalEnabled) return res.sendStatus(404);
   try {
     const details = getCaseDetails(req.params.id);
     if (!details) return res.status(404).json({ success: false, error: 'Case not found' });
@@ -109,7 +135,7 @@ app.post('/api/audit/session/new', (req, res) => {
 });
 
 app.get('/api/audit/session/:id', (req, res) => {
-  const session = auditEngine.getSession(req.params.id);
+  const session = req.auditEngine.getSession(req.params.id);
   if (!session) return res.status(404).json({ success: false, error: 'Session not found' });
   res.json({ success: true, session });
 });
@@ -118,11 +144,11 @@ app.get('/api/audit/session/:id', (req, res) => {
 app.post('/api/audit/interrogate', async (req, res) => {
   try {
     const { sessionId, answer } = req.body;
-    const result = await auditEngine.handleInterrogationAnswer(sessionId, answer);
-    persistSessionToFile(result.session);
+    const result = await req.auditEngine.handleInterrogationAnswer(sessionId, answer);
+    await saveSession(req, result.session);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -130,11 +156,18 @@ app.post('/api/audit/interrogate', async (req, res) => {
 app.post('/api/audit/summary', async (req, res) => {
   try {
     const { sessionId } = req.body;
-    const summary = await auditEngine.generateInterrogationSummary(sessionId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const engine = req.auditEngine;
+    if (advisorPortalEnabled) {
+      if (req.body.answer?.category !== 'future_expectation') {
+        return res.status(400).json({ success: false, error: 'Complete the final question before submitting.' });
+      }
+      await engine.handleInterrogationAnswer(sessionId, req.body.answer);
+    }
+    const summary = await engine.generateInterrogationSummary(sessionId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, summary });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -142,22 +175,22 @@ app.post('/api/audit/summary', async (req, res) => {
 app.post('/api/audit/reveal', async (req, res) => {
   try {
     const { sessionId } = req.body;
-    const reveal = await auditEngine.generateReveal(sessionId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const reveal = await req.auditEngine.generateReveal(sessionId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, reveal });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
-app.post('/api/audit/route', (req, res) => {
+app.post('/api/audit/route', async (req, res) => {
   try {
     const { sessionId, discoveryId } = req.body;
-    const reveal = auditEngine.chooseRoute(sessionId, discoveryId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const reveal = req.auditEngine.chooseRoute(sessionId, discoveryId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, reveal });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    sessionError(res, err, 400);
   }
 });
 
@@ -165,22 +198,22 @@ app.post('/api/audit/route', (req, res) => {
 app.post('/api/audit/discovery/check', async (req, res) => {
   try {
     const { sessionId, discoveryId, choice, userComment } = req.body;
-    const result = await auditEngine.handleUnderstandingCheck(sessionId, discoveryId, choice, userComment);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const result = await req.auditEngine.handleUnderstandingCheck(sessionId, discoveryId, choice, userComment);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
 app.post('/api/audit/discovery/explore', async (req, res) => {
   try {
     const { sessionId, discoveryId, question } = req.body;
-    const exploration = await auditEngine.exploreDiscovery(sessionId, discoveryId, question);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const exploration = await req.auditEngine.exploreDiscovery(sessionId, discoveryId, question);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, exploration });
   } catch (err) {
-    res.status(400).json({ success: false, error: err.message });
+    sessionError(res, err, 400);
   }
 });
 
@@ -188,11 +221,11 @@ app.post('/api/audit/discovery/explore', async (req, res) => {
 app.post('/api/audit/verdict', async (req, res) => {
   try {
     const { sessionId } = req.body;
-    const verdict = await auditEngine.generateVerdict(sessionId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const verdict = await req.auditEngine.generateVerdict(sessionId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, verdict });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -200,11 +233,11 @@ app.post('/api/audit/verdict', async (req, res) => {
 app.post('/api/audit/mission', async (req, res) => {
   try {
     const { sessionId } = req.body;
-    const mission = await auditEngine.generateMission(sessionId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const mission = await req.auditEngine.generateMission(sessionId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, mission });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -212,11 +245,11 @@ app.post('/api/audit/mission', async (req, res) => {
 app.post('/api/audit/mission/accept', async (req, res) => {
   try {
     const { sessionId, decision, reason } = req.body;
-    const result = await auditEngine.handleMissionAcceptance(sessionId, decision, reason);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const result = await req.auditEngine.handleMissionAcceptance(sessionId, decision, reason);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json(result);
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -224,11 +257,11 @@ app.post('/api/audit/mission/accept', async (req, res) => {
 app.post('/api/audit/followup', async (req, res) => {
   try {
     const { sessionId, day, status, details } = req.body;
-    const result = await auditEngine.handleFollowUp(sessionId, { day, status, details });
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const result = await req.auditEngine.handleFollowUp(sessionId, { day, status, details });
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, followUp: result });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
@@ -236,16 +269,17 @@ app.post('/api/audit/followup', async (req, res) => {
 app.post('/api/audit/briefing', async (req, res) => {
   try {
     const { sessionId } = req.body;
-    const briefing = await auditEngine.generateAdvisorBriefing(sessionId);
-    persistSessionToFile(auditEngine.getSession(sessionId));
+    const briefing = await req.auditEngine.generateAdvisorBriefing(sessionId);
+    await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, briefing });
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    sessionError(res, err);
   }
 });
 
 // 13. Monitor usage & token tracking dev console
 app.get('/api/monitor/usage', (req, res) => {
+  if (PUBLIC_DEMO || advisorPortalEnabled) return res.json({ success: true, mockMode: aiService.mockMode, publicDemo: PUBLIC_DEMO });
   res.json({
     success: true,
     mockMode: aiService.mockMode,
@@ -258,6 +292,9 @@ app.post('/api/monitor/mock-mode', (req, res) => {
   aiService.setMockMode(Boolean(enabled));
   res.json({ success: true, mockMode: aiService.mockMode });
 });
+
+app.use(portalErrorHandler);
+app.use('/api', (req, res) => res.status(404).json({ success: false, error: 'API route not found.' }));
 
 // Serve frontend in production
 const distDir = path.resolve(here, '../dist');
@@ -274,9 +311,12 @@ if (fs.existsSync(distDir)) {
 const server = http.createServer(app);
 
 // WebSocket relay for real-time voice
-const wss = new WebSocketServer({ server, path: '/voice' });
+if (!PUBLIC_DEMO && !advisorPortalEnabled) {
+  const wss = new WebSocketServer({ server, path: '/voice' });
+  wss.on('connection', relayVoice);
+}
 
-wss.on('connection', (browserWs, req) => {
+function relayVoice(browserWs, req) {
   const url = new URL(req.url, 'http://localhost');
   const model = url.searchParams.get('model') || 'gpt-realtime-2.1-mini';
   const caseId = url.searchParams.get('case');
@@ -343,7 +383,7 @@ ${caseBrief}`;
   browserWs.on('error', cleanup);
   upstreamWs.on('close', cleanup);
   upstreamWs.on('error', cleanup);
-});
+}
 
 server.listen(PORT, () => {
   console.log(`⚡ THE PLAN AUDIT Server running on http://localhost:${PORT}`);
