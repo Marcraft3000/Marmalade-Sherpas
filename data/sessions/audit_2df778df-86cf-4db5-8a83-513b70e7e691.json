@@ -1,0 +1,425 @@
+{
+  "id": "audit_2df778df-86cf-4db5-8a83-513b70e7e691",
+  "version": 2,
+  "caseId": "michael-carter",
+  "caseName": "Michael",
+  "isCoupleMode": false,
+  "partners": [],
+  "focusPrompt": {
+    "question": "What would you most want your family to be protected against?",
+    "topic": "protection"
+  },
+  "currentStage": "followup",
+  "createdAt": "2026-11-13T16:58:15.216Z",
+  "updatedAt": "2026-11-13T17:04:10.514Z",
+  "expectedScore": 30,
+  "partnerScores": {},
+  "answers": [
+    {
+      "category": "perceived_health",
+      "value": 30,
+      "question": "How do things feel, financially?",
+      "partner": null,
+      "timestamp": "2026-11-13T16:58:27.886Z"
+    },
+    {
+      "category": "confidence",
+      "value": "Unsure",
+      "question": "How confident do you feel about your decisions?",
+      "partner": null,
+      "timestamp": "2026-11-13T16:58:27.890Z"
+    },
+    {
+      "category": "main_concern",
+      "value": "Preparing for the unexpected",
+      "question": "What’s the thought you keep coming back to?",
+      "partner": null,
+      "timestamp": "2026-11-13T16:58:27.893Z"
+    },
+    {
+      "category": "financial_priority",
+      "value": "Feel more in control of monthly spending",
+      "question": "What would you most like to change?",
+      "partner": null,
+      "timestamp": "2026-11-13T16:58:27.896Z"
+    },
+    {
+      "category": "future_expectation",
+      "value": "help",
+      "question": "What would you most want your family to be protected against?",
+      "partner": null,
+      "timestamp": "2026-11-13T16:58:27.899Z"
+    }
+  ],
+  "summary": {
+    "expectedScore": 30,
+    "partnerScores": {},
+    "confidence": "Unsure",
+    "mainConcern": "Preparing for the unexpected",
+    "biggestPriority": "Feel more in control of monthly spending",
+    "auditorImpression": "These are your words. Keep them in mind as we open the plan together.",
+    "keyBeliefs": [
+      "Preparing for the unexpected",
+      "Feel more in control of monthly spending"
+    ]
+  },
+  "reveal": {
+    "version": 2,
+    "expectedScore": 30,
+    "partnerScores": {},
+    "actualScore": 26,
+    "scoreSource": {
+      "document": "financial-health.json",
+      "path": "/score/published_score",
+      "raw": 26
+    },
+    "gap": 4,
+    "band": "critical",
+    "userQuote": {
+      "text": "Preparing for the unexpected",
+      "category": "main_concern",
+      "partner": null
+    },
+    "priorityQuote": "Feel more in control of monthly spending",
+    "scoreContext": null,
+    "missing": [],
+    "auditorReaction": "The score is a starting point. The details below help explain what it means for the things you care about.",
+    "discoveries": [
+      {
+        "id": "e-628c6565d13c",
+        "title": "Yearly retirement spending that income does not cover, paid from savings",
+        "figure": "$59,612.79 / year",
+        "badge": "PROJECTION",
+        "explanation": "Yearly retirement spending that income does not cover, paid from savings. The period covered is average over the 33 years of retirement. Savings, cash and required IRA withdrawals included, pay this each year on average. It is what the plan asks of savings.",
+        "whyItMatters": "Read this in the context of your goals, alongside the rest of your plan.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/retirement/spendingGap",
+          "raw": {
+            "note": "Savings, cash and required IRA withdrawals included, pay this each year on average. It is what the plan asks of savings.",
+            "unit": "USD/yr",
+            "basis": "today's dollars at the plan date",
+            "label": "Yearly retirement spending that income does not cover, paid from savings",
+            "value": 59612.79,
+            "period": "average over the 33 years of retirement",
+            "notToBeConfusedWith": [
+              "averagePortfolioDraw"
+            ]
+          },
+          "basis": "today's dollars at the plan date",
+          "period": "average over the 33 years of retirement"
+        },
+        "reflectionQuestion": "How does this change the way you think about yearly retirement spending that income does not cover, paid from savings?"
+      },
+      {
+        "id": "e-745542b215ce",
+        "title": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "figure": "34%",
+        "badge": "PROJECTION",
+        "explanation": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement.",
+        "whyItMatters": "Read this in the context of your goals, alongside the rest of your plan.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+          "raw": {
+            "unit": "percent",
+            "basis": "today's dollars at the plan date",
+            "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+            "value": "34%",
+            "period": "average over the 33 years of retirement",
+            "replaces": [
+              "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+              "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+            ]
+          },
+          "basis": "today's dollars at the plan date",
+          "period": "average over the 33 years of retirement"
+        },
+        "reflectionQuestion": "How does this change the way you think about share of the yearly retirement spending need that income covers (guaranteed and other income)?"
+      },
+      {
+        "id": "e-f0c542359b7c",
+        "title": "Months of essential expenses accessible cash covers",
+        "figure": "3.2 months",
+        "badge": "PLAN DATA",
+        "explanation": "Months of essential expenses accessible cash covers. The period covered is today, before near-term goals.",
+        "whyItMatters": "Read this in the context of your goals, alongside the rest of your plan.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/cash/monthsCovered",
+          "raw": {
+            "unit": "months",
+            "basis": "n/a",
+            "label": "Months of essential expenses accessible cash covers",
+            "value": "3.2",
+            "period": "today, before near-term goals",
+            "replaces": [
+              "ratios.emergencyFund.emergencyFundMonths (capped at \"+12\")",
+              "savingsAndExpenses.liquidityContext.emergencyFundInMonths",
+              "protection.emergencyFund.emergencyFundCoverageEvaluation.monthsCovered"
+            ],
+            "notToBeConfusedWith": [
+              "the recommended number of months"
+            ]
+          },
+          "basis": "n/a",
+          "period": "today, before near-term goals"
+        },
+        "reflectionQuestion": "How does this change the way you think about months of essential expenses accessible cash covers?"
+      }
+    ]
+  },
+  "verdict": {
+    "doingRight": "You have made your priorities explicit and compared them with your plan.",
+    "needsAttention": "Yearly retirement spending that income does not cover, paid from savings",
+    "overlooking": "An overall score cannot answer every question about the goals and timing that matter to you.",
+    "bottomLine": "Start with what matters to you: “Feel more in control of monthly spending”."
+  },
+  "mission": {
+    "number": "YOUR NEXT STEP",
+    "title": "Add umbrella cover",
+    "whyItMatters": "Your stated priority is “Feel more in control of monthly spending”. Use it to decide which recommendation to discuss first.",
+    "firstAction": "Prepare the details needed to discuss this plan recommendation: “Add umbrella cover”.",
+    "recommendation": "Add $1M of umbrella to raise the liability shield",
+    "source": {
+      "document": "financial-health.json",
+      "path": "/score/top_moves/0",
+      "raw": {
+        "title": "Add umbrella cover",
+        "action": "Add $1M of umbrella to raise the liability shield",
+        "effort": "low",
+        "target_amount": 1000000,
+        "score_before": 26,
+        "score_after": 31,
+        "lifts_a_cap": false
+      }
+    },
+    "steps": [
+      "Review the recommendation in its original context.",
+      "Write down your question and any barrier to taking that step.",
+      "Confirm the practical next step with your advisor."
+    ],
+    "checkpoints": [
+      {
+        "day": 3,
+        "prompt": "Have you reviewed this recommendation and written down a question for your advisor?"
+      },
+      {
+        "day": 30,
+        "prompt": "What changed after discussing this recommendation, and what remains unresolved?"
+      }
+    ],
+    "timeframe": "Day 3 and day 30 check-ins in this demo",
+    "howToVerify": "Your question or request is recorded. Completion is self-reported.",
+    "estimatedDifficulty": "Suggested preparation step; effort depends on your circumstances",
+    "status": "in_progress",
+    "acceptedAt": "2026-11-13T17:03:50.548Z",
+    "userReason": ""
+  },
+  "followUpHistory": [
+    {
+      "day": 3,
+      "status": "started",
+      "auditorReaction": "Your progress is recorded. What remains before you can finish?",
+      "nextStep": "Prepare the details needed to discuss this plan recommendation: “Add umbrella cover”.",
+      "updatedMissionStatus": "in_progress",
+      "details": "",
+      "verification": "self_reported"
+    }
+  ],
+  "understandingChecks": [
+    {
+      "discoveryId": "e-745542b215ce",
+      "choice": "discuss",
+      "response": "Saved for your advisor conversation. This finding and your original concern will be included in the briefing.",
+      "timestamp": "2026-11-13T17:03:05.129Z"
+    }
+  ],
+  "explorations": [
+    {
+      "discoveryId": "e-745542b215ce",
+      "question": "How fucked am i",
+      "answer": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement. Read this in the context of your goals, alongside the rest of your plan. If this does not answer your question, save it for your advisor.",
+      "source": {
+        "document": "financial-health.json",
+        "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+        "raw": {
+          "unit": "percent",
+          "basis": "today's dollars at the plan date",
+          "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+          "value": "34%",
+          "period": "average over the 33 years of retirement",
+          "replaces": [
+            "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+            "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+          ]
+        },
+        "basis": "today's dollars at the plan date",
+        "period": "average over the 33 years of retirement"
+      },
+      "timestamp": "2026-11-13T17:01:57.002Z"
+    },
+    {
+      "discoveryId": "e-745542b215ce",
+      "question": "Hi how can i make pancakes",
+      "answer": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement. Read this in the context of your goals, alongside the rest of your plan. If this does not answer your question, save it for your advisor.",
+      "source": {
+        "document": "financial-health.json",
+        "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+        "raw": {
+          "unit": "percent",
+          "basis": "today's dollars at the plan date",
+          "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+          "value": "34%",
+          "period": "average over the 33 years of retirement",
+          "replaces": [
+            "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+            "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+          ]
+        },
+        "basis": "today's dollars at the plan date",
+        "period": "average over the 33 years of retirement"
+      },
+      "timestamp": "2026-11-13T17:02:42.189Z"
+    },
+    {
+      "discoveryId": "e-745542b215ce",
+      "question": "Hi how can i make pancakes",
+      "answer": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement. Read this in the context of your goals, alongside the rest of your plan. If this does not answer your question, save it for your advisor.",
+      "source": {
+        "document": "financial-health.json",
+        "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+        "raw": {
+          "unit": "percent",
+          "basis": "today's dollars at the plan date",
+          "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+          "value": "34%",
+          "period": "average over the 33 years of retirement",
+          "replaces": [
+            "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+            "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+          ]
+        },
+        "basis": "today's dollars at the plan date",
+        "period": "average over the 33 years of retirement"
+      },
+      "timestamp": "2026-11-13T17:02:42.761Z"
+    },
+    {
+      "discoveryId": "e-745542b215ce",
+      "question": "Hi how can i make pancakes",
+      "answer": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement. Read this in the context of your goals, alongside the rest of your plan. If this does not answer your question, save it for your advisor.",
+      "source": {
+        "document": "financial-health.json",
+        "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+        "raw": {
+          "unit": "percent",
+          "basis": "today's dollars at the plan date",
+          "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+          "value": "34%",
+          "period": "average over the 33 years of retirement",
+          "replaces": [
+            "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+            "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+          ]
+        },
+        "basis": "today's dollars at the plan date",
+        "period": "average over the 33 years of retirement"
+      },
+      "timestamp": "2026-11-13T17:02:42.939Z"
+    },
+    {
+      "discoveryId": "e-745542b215ce",
+      "question": "Hi how can i make pancakes",
+      "answer": "Share of the yearly retirement spending need that income covers (guaranteed and other income). The period covered is average over the 33 years of retirement. Read this in the context of your goals, alongside the rest of your plan. If this does not answer your question, save it for your advisor.",
+      "source": {
+        "document": "financial-health.json",
+        "path": "/key_metrics/facts/retirement/incomeShareOfNeed",
+        "raw": {
+          "unit": "percent",
+          "basis": "today's dollars at the plan date",
+          "label": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+          "value": "34%",
+          "period": "average over the 33 years of retirement",
+          "replaces": [
+            "retirementAndOtherGoals.incomeVsIncomeNeeds.allIncomesVsIncomeNeededExLtcCosts",
+            "ratios.guaranteedIncomeRatio.allIncomesVsIncomeNeededExLtcCosts"
+          ]
+        },
+        "basis": "today's dollars at the plan date",
+        "period": "average over the 33 years of retirement"
+      },
+      "timestamp": "2026-11-13T17:02:43.089Z"
+    }
+  ],
+  "simulatedDay": 3,
+  "briefing": {
+    "clientName": "Michael",
+    "verifiedScore": 26,
+    "expectedScore": 30,
+    "scoreGap": 4,
+    "facts": [
+      "PROJECTION: Yearly retirement spending that income does not cover, paid from savings — $59,612.79 / year (/key_metrics/facts/retirement/spendingGap)",
+      "PROJECTION: Share of the yearly retirement spending need that income covers (guaranteed and other income) — 34% (/key_metrics/facts/retirement/incomeShareOfNeed)",
+      "PLAN DATA: Months of essential expenses accessible cash covers — 3.2 months (/key_metrics/facts/cash/monthsCovered)"
+    ],
+    "userStatements": [
+      "Client — perceived_health: “30”",
+      "Client — confidence: “Unsure”",
+      "Client — main_concern: “Preparing for the unexpected”",
+      "Client — financial_priority: “Feel more in control of monthly spending”",
+      "Client — future_expectation: “help”"
+    ],
+    "misconceptionsAndGaps": [
+      "Discuss the client’s expectations without inferring beliefs they did not state."
+    ],
+    "acceptedMission": "Add umbrella cover",
+    "missionStatus": "in_progress",
+    "advisorAgenda": [
+      "Preparing for the unexpected",
+      "help",
+      "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+      "How fucked am i",
+      "Hi how can i make pancakes",
+      "Hi how can i make pancakes",
+      "Hi how can i make pancakes",
+      "Hi how can i make pancakes"
+    ],
+    "exploredQuestions": [
+      {
+        "question": "How fucked am i",
+        "finding": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "source": "/key_metrics/facts/retirement/incomeShareOfNeed"
+      },
+      {
+        "question": "Hi how can i make pancakes",
+        "finding": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "source": "/key_metrics/facts/retirement/incomeShareOfNeed"
+      },
+      {
+        "question": "Hi how can i make pancakes",
+        "finding": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "source": "/key_metrics/facts/retirement/incomeShareOfNeed"
+      },
+      {
+        "question": "Hi how can i make pancakes",
+        "finding": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "source": "/key_metrics/facts/retirement/incomeShareOfNeed"
+      },
+      {
+        "question": "Hi how can i make pancakes",
+        "finding": "Share of the yearly retirement spending need that income covers (guaranteed and other income)",
+        "source": "/key_metrics/facts/retirement/incomeShareOfNeed"
+      }
+    ],
+    "followUp": [
+      {
+        "day": 3,
+        "status": "started",
+        "note": "",
+        "verification": "self_reported"
+      }
+    ]
+  },
+  "chosenRouteId": null
+}

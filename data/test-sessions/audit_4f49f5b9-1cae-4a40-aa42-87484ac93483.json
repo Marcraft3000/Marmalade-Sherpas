@@ -1,0 +1,217 @@
+{
+  "id": "audit_4f49f5b9-1cae-4a40-aa42-87484ac93483",
+  "version": 2,
+  "caseId": "samantha-lewis",
+  "caseName": "Samantha",
+  "isCoupleMode": false,
+  "partners": [],
+  "currentStage": "followup",
+  "createdAt": "2026-11-12T20:46:16.681Z",
+  "updatedAt": "2026-11-12T20:46:22.213Z",
+  "expectedScore": 50,
+  "partnerScores": {},
+  "answers": [
+    {
+      "category": "perceived_health",
+      "value": 50,
+      "question": "How do things feel, financially?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:46:16.994Z"
+    },
+    {
+      "category": "confidence",
+      "value": "Somewhat confident",
+      "question": "How confident do you feel about your decisions?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:46:16.997Z"
+    },
+    {
+      "category": "main_concern",
+      "value": "I want to feel secure when I retire.",
+      "question": "What’s the thought you keep coming back to?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:46:17.000Z"
+    },
+    {
+      "category": "financial_priority",
+      "value": "Plan confidently for the long term",
+      "question": "What would you most like to change?",
+      "partner": null,
+      "timestamp": "2026-11-12T20:46:17.003Z"
+    }
+  ],
+  "summary": {
+    "expectedScore": 50,
+    "partnerScores": {},
+    "confidence": "Somewhat confident",
+    "mainConcern": "I want to feel secure when I retire.",
+    "biggestPriority": "Plan confidently for the long term",
+    "auditorImpression": "These are your words. Keep them in mind as we open the plan together.",
+    "keyBeliefs": [
+      "I want to feel secure when I retire.",
+      "Plan confidently for the long term"
+    ]
+  },
+  "reveal": {
+    "version": 2,
+    "expectedScore": 50,
+    "partnerScores": {},
+    "actualScore": 82,
+    "scoreSource": {
+      "document": "financial-health.json",
+      "path": "/score/published_score",
+      "raw": 82
+    },
+    "gap": -32,
+    "band": "strong",
+    "userQuote": {
+      "text": "I want to feel secure when I retire.",
+      "category": "main_concern",
+      "partner": null
+    },
+    "priorityQuote": "Plan confidently for the long term",
+    "scoreContext": {
+      "evidenceId": "e-c79763ee3db0",
+      "title": "A strong score. A longer story.",
+      "explanation": "Your overall score and your retirement projection answer different questions. Read both before deciding what to do next."
+    },
+    "missing": [],
+    "auditorReaction": "Your overall score and your retirement projection answer different questions. Read both before deciding what to do next.",
+    "discoveries": [
+      {
+        "id": "e-c79763ee3db0",
+        "title": "Savings and investments run out at age 73",
+        "figure": "$1,448,672.53",
+        "badge": "PROJECTION",
+        "explanation": "Under the assumptions in this plan, savings and investments would be exhausted during retirement. This is a projection, not a prediction of what will definitely happen.",
+        "whyItMatters": "The amount below is planned spending left unpaid by the end of the plan. It is not a debt balance.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/retirement/savingsRunOut",
+          "raw": {
+            "note": "Never write a negative balance or a debt. Say when savings run out and how much planned spending would go unpaid. Net worth stays positive only because it includes the home.",
+            "unit": "USD",
+            "basis": "today's dollars at the plan date",
+            "label": "Savings and investments run out at age 73",
+            "value": 1448672.53,
+            "period": "planned spending left unpaid by the end of the plan",
+            "replaces": [
+              "assetDepletion.liquidAssetsAtEndOfPlan",
+              "capacity.liquidAssetsAtEndOfPlan"
+            ]
+          },
+          "basis": "today's dollars at the plan date",
+          "period": "planned spending left unpaid by the end of the plan"
+        }
+      },
+      {
+        "id": "e-628c6565d13c",
+        "title": "Yearly retirement spending that income does not cover, paid from savings",
+        "figure": "$115,335.47 / year",
+        "badge": "PROJECTION",
+        "explanation": "Yearly retirement spending that income does not cover, paid from savings. The period covered is average over the 26 years of retirement. Savings, cash and required IRA withdrawals included, pay this each year on average. It is what the plan asks of savings.",
+        "whyItMatters": "Read this in the context of your goals, alongside the rest of your plan.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/retirement/spendingGap",
+          "raw": {
+            "note": "Savings, cash and required IRA withdrawals included, pay this each year on average. It is what the plan asks of savings.",
+            "unit": "USD/yr",
+            "basis": "today's dollars at the plan date",
+            "label": "Yearly retirement spending that income does not cover, paid from savings",
+            "value": 115335.47,
+            "period": "average over the 26 years of retirement",
+            "notToBeConfusedWith": [
+              "averagePortfolioDraw"
+            ]
+          },
+          "basis": "today's dollars at the plan date",
+          "period": "average over the 26 years of retirement"
+        }
+      },
+      {
+        "id": "e-75d145a3d747",
+        "title": "Yearly retirement spending need (excluding estimated long-term care)",
+        "figure": "$153,671.62 / year",
+        "badge": "PROJECTION",
+        "explanation": "Yearly retirement spending need (excluding estimated long-term care). The period covered is average over the 26 years of retirement. Includes taxes, debt payments and goals after retirement; do not add those on top. annualTotalIncomeNeeded adds an estimated long-term care cost: do not quote it.",
+        "whyItMatters": "Read this in the context of your goals, alongside the rest of your plan.",
+        "source": {
+          "document": "financial-health.json",
+          "path": "/key_metrics/facts/retirement/spendingNeed",
+          "raw": {
+            "note": "Includes taxes, debt payments and goals after retirement; do not add those on top. annualTotalIncomeNeeded adds an estimated long-term care cost: do not quote it.",
+            "unit": "USD/yr",
+            "basis": "today's dollars at the plan date",
+            "label": "Yearly retirement spending need (excluding estimated long-term care)",
+            "value": 153671.62,
+            "period": "average over the 26 years of retirement",
+            "replaces": [
+              "retirementAndOtherGoals.incomeNeedsAndWithdrawals.annualTotalIncomeNeeded (adds estimated long-term care)"
+            ]
+          },
+          "basis": "today's dollars at the plan date",
+          "period": "average over the 26 years of retirement"
+        }
+      }
+    ]
+  },
+  "verdict": {
+    "doingRight": "You have made your priorities explicit and compared them with your plan.",
+    "needsAttention": "Savings and investments run out at age 73",
+    "overlooking": "Your overall score and your retirement projection answer different questions. Read both before deciding what to do next.",
+    "bottomLine": "Start with what matters to you: “Plan confidently for the long term”."
+  },
+  "mission": {
+    "number": "YOUR NEXT STEP",
+    "title": "Close a coverage gap",
+    "whyItMatters": "Your stated priority is “Plan confidently for the long term”. Use it to decide which recommendation to discuss first.",
+    "firstAction": "Prepare the details needed to discuss this plan recommendation: “Close a coverage gap”.",
+    "recommendation": "Add homeowners insurance on Primary home so coverage integrity clears that gap",
+    "source": {
+      "document": "financial-health.json",
+      "path": "/score/top_moves/0",
+      "raw": {
+        "title": "Close a coverage gap",
+        "action": "Add homeowners insurance on Primary home so coverage integrity clears that gap",
+        "effort": "medium",
+        "target_amount": null,
+        "score_before": 82,
+        "score_after": 84,
+        "lifts_a_cap": false
+      }
+    },
+    "steps": [
+      "Review the recommendation in its original context.",
+      "Write down your question and any barrier to taking that step.",
+      "Confirm the practical next step with your advisor."
+    ],
+    "timeframe": "Choose a time that works for you",
+    "howToVerify": "Your question or request is recorded. Completion is self-reported.",
+    "estimatedDifficulty": "Suggested preparation step; effort depends on your circumstances",
+    "status": "in_progress",
+    "acceptedAt": "2026-11-12T20:46:22.121Z",
+    "userReason": ""
+  },
+  "followUpHistory": [
+    {
+      "day": 3,
+      "status": "started",
+      "auditorReaction": "Your progress is recorded. What remains before you can finish?",
+      "nextStep": "Prepare the details needed to discuss this plan recommendation: “Close a coverage gap”.",
+      "updatedMissionStatus": "in_progress",
+      "details": "Reviewed the source.",
+      "verification": "self_reported"
+    }
+  ],
+  "understandingChecks": [
+    {
+      "discoveryId": "e-c79763ee3db0",
+      "choice": "discuss",
+      "response": "Saved for your advisor conversation. This finding and your original concern will be included in the briefing.",
+      "timestamp": "2026-11-12T20:46:20.315Z"
+    }
+  ],
+  "simulatedDay": 3,
+  "briefing": null
+}
