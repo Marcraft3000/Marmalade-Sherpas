@@ -4,3 +4,10 @@ dist/
 .env.local
 .DS_Store
 *.log
+data/imports/
+data/sessions/
+data/demo-sessions/
+data/test-*/
+test-results/
+playwright-report/
+.env.example

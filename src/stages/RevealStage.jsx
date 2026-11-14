@@ -1,261 +1,102 @@
-import React, { useState, useEffect } from 'react';
-import { ArrowRight, AlertTriangle, CheckCircle2, HelpCircle, Shield, ChevronDown, ChevronUp } from 'lucide-react';
-import AuditorAvatar from '../components/AuditorAvatar';
+import React, { useEffect, useRef, useState } from 'react';
+import { ArrowRight, ArrowLeft, Check, MessageCircle, BookOpen, SkipForward, Volume2, Sparkles } from 'lucide-react';
+import SourceDrawer from '../components/SourceDrawer';
+import { submitUnderstandingCheck, exploreDiscovery } from '../utils/api';
 import { speechService } from '../utils/speech';
-import { submitUnderstandingCheck } from '../utils/api';
 
-export default function RevealStage({
-  revealData,
-  session,
-  onProceedToVerdict,
-}) {
-  const [activeDiscovery, setActiveDiscovery] = useState(0);
-  const [understandingFeedback, setUnderstandingFeedback] = useState({});
-  const [checkingLoading, setCheckingLoading] = useState(false);
-  const [speaking, setSpeaking] = useState(false);
-  const [revealed, setRevealed] = useState(false);
-
-  // Trigger suspense reveal
+export default function RevealStage({ revealData: data, session, onProceedToVerdict, onChooseRoute, isMuted }) {
+  const [phase, setPhase] = useState('words');
+  const [index, setIndex] = useState(0);
+  const [detail, setDetail] = useState(false);
+  const [feedback, setFeedback] = useState({});
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [routeChoice, setRouteChoice] = useState(null);
+  const [question, setQuestion] = useState('');
+  const [exploration, setExploration] = useState(null);
+  const [exploring, setExploring] = useState(false);
+  const heading = useRef(null);
+  const scene = useRef(null);
+  const findings = data?.discoveries || [];
+  const current = findings[index];
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setRevealed(true);
-      if (revealData?.auditorReaction) {
-        speechService.speak(
-          revealData.auditorReaction,
-          () => setSpeaking(true),
-          () => setSpeaking(false)
-        );
-      }
-    }, 400);
+    if (phase !== 'pause') return;
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const timer = setTimeout(() => setPhase('score'), reduced ? 0 : 1700);
     return () => clearTimeout(timer);
-  }, [revealData]);
-
-  const handleCheck = async (discoveryId, choice) => {
-    setCheckingLoading(true);
+  }, [phase]);
+  useEffect(() => { heading.current?.focus({ preventScroll: true }); }, [phase, index]);
+  async function respond(choice) {
+    setBusy(true); setError('');
     try {
-      const res = await submitUnderstandingCheck(session.id, discoveryId, choice);
-      setUnderstandingFeedback(prev => ({
-        ...prev,
-        [discoveryId]: { choice, response: res.response }
-      }));
-      speechService.speak(res.response, () => setSpeaking(true), () => setSpeaking(false));
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setCheckingLoading(false);
+      const result = await submitUnderstandingCheck(session.id, current.id, choice);
+      setFeedback(old => ({ ...old, [current.id]: result.response }));
+    } catch { setError('We could not save that response. Please try again.'); }
+    finally { setBusy(false); }
+  }
+  function move(next) { setIndex(next); setDetail(false); setQuestion(''); setExploration(null); setError(''); speechService.stop(); }
+  function parallax(event) {
+    if (!scene.current || window.matchMedia('(prefers-reduced-motion: reduce)').matches || event.pointerType === 'touch') return;
+    const box = scene.current.getBoundingClientRect();
+    scene.current.style.setProperty('--parallax-x', `${((event.clientX - box.left) / box.width - .5) * 22}px`);
+    scene.current.style.setProperty('--parallax-y', `${((event.clientY - box.top) / box.height - .5) * 22}px`);
+  }
+  async function beginFindings() {
+    if (routeChoice) {
+      setBusy(true);
+      try { await onChooseRoute(routeChoice); setIndex(0); }
+      catch { setError('We could not save your choice. Please try again.'); setBusy(false); return; }
+      setBusy(false);
     }
-  };
-
-  const expected = revealData?.expectedScore ?? session.expectedScore;
-  const actual = revealData?.actualScore ?? 60;
-  const gap = expected - actual; // e.g. 85 - 60 = +25 (user over-optimistic)
-
-  const getBandBadge = (band) => {
-    switch (band?.toLowerCase()) {
-      case 'critical':
-        return 'bg-red-500/20 text-red-400 border-red-500/40';
-      case 'vulnerable':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'stable':
-        return 'bg-sky-500/20 text-sky-300 border-sky-500/40';
-      case 'strong':
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      default:
-        return 'bg-gray-500/20 text-gray-300 border-gray-500/40';
-    }
-  };
-
-  return (
-    <div className="max-w-4xl mx-auto px-4 py-8 animate-fade-in">
-      {/* Auditor Commentary */}
-      <AuditorAvatar
-        speaking={speaking}
-        mood={Math.abs(gap) > 15 ? "ROASTING" : "DISSECTING"}
-        text={revealData?.auditorReaction || "The numbers are in. Let's see how your self-assessment matches the cold hard math."}
-        onReplay={() => {
-          if (revealData?.auditorReaction) {
-            speechService.speak(revealData.auditorReaction, () => setSpeaking(true), () => setSpeaking(false));
-          }
-        }}
-      />
-
-      {/* STAGE 2 HERO: EXPECTED VS ACTUAL COMPARISON */}
-      <div className="bg-[#0E1315] border border-[#1C2529] rounded-2xl p-6 md:p-8 shadow-2xl mb-8 relative overflow-hidden">
-        <div className="text-center mb-6">
-          <span className="text-xs font-mono font-bold tracking-widest uppercase text-[#B8DBD9] px-3 py-1 rounded-full bg-[#04724D]/10 border border-[#04724D]/20">
-            THE MOMENT OF TRUTH
-          </span>
-          <h2 className="text-2xl md:text-3xl font-black text-white mt-3 font-display">
-            EXPECTATION VS REALITY
-          </h2>
-        </div>
-
-        {/* Big Numbers Comparison Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center text-center py-4">
-          {/* Expected Score */}
-          <div className="p-6 rounded-2xl bg-[#0A0D0E] border border-[#1C2529]">
-            <span className="text-xs font-mono uppercase text-[#92979B] tracking-wider block mb-1">
-              WHAT YOU PREDICTED
-            </span>
-            <div className="text-5xl md:text-6xl font-black font-mono text-white">
-              {expected}
-            </div>
-            <span className="text-xs text-[#92979B] mt-2 block">Your Self-Assessment</span>
-          </div>
-
-          {/* Reality Gap Indicator */}
-          <div className="flex flex-col items-center justify-center p-4">
-            <span className="text-xs font-mono uppercase text-[#92979B] tracking-wider mb-2">
-              REALITY GAP
-            </span>
-            <div className={`text-4xl md:text-5xl font-black font-mono px-4 py-2 rounded-2xl border ${
-              gap > 10
-                ? 'bg-red-500/15 text-red-400 border-red-500/30 glow-red'
-                : gap < -10
-                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                : 'bg-amber-500/15 text-amber-300 border-amber-500/30 glow-amber'
-            }`}>
-              {gap > 0 ? `-${gap} PTS` : gap < 0 ? `+${Math.abs(gap)} PTS` : '0 PTS'}
-            </div>
-            <span className="text-[11px] font-mono text-[#92979B] mt-2">
-              {gap > 0 ? "⚠️ Over-Optimistic Gap" : gap < 0 ? "Under-estimated Foundation" : "Accurate Perception"}
-            </span>
-          </div>
-
-          {/* Actual Sherpas Score */}
-          <div className="p-6 rounded-2xl bg-[#0A0D0E] border border-[#04724D]/40 glow-lime-sm">
-            <span className="text-xs font-mono uppercase text-[#B8DBD9] tracking-wider block mb-1 font-bold">
-              VERIFIED SHERPAS SCORE
-            </span>
-            <div className="text-5xl md:text-6xl font-black font-mono text-[#B8DBD9]">
-              {actual}
-            </div>
-            <div className="mt-2 flex items-center justify-center gap-1.5">
-              <span className={`text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full border ${getBandBadge(revealData?.band)}`}>
-                BAND: {revealData?.band || 'STABLE'}
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* DISCOVERIES BREAKDOWN */}
-      <div className="space-y-6 mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-xl font-bold text-white">Critical Financial Discoveries</h3>
-            <p className="text-xs text-[#92979B]">Unpacking the core paradoxes and vulnerabilities in your plan</p>
-          </div>
-          <span className="text-xs font-mono text-[#B8DBD9] bg-[#04724D]/10 px-2.5 py-1 rounded-lg border border-[#04724D]/20">
-            {revealData?.discoveries?.length || 0} KEY FINDINGS
-          </span>
-        </div>
-
-        {revealData?.discoveries?.map((disc, idx) => {
-          const feedback = understandingFeedback[disc.id];
-
-          return (
-            <div
-              key={disc.id || idx}
-              className="bg-[#0E1315] border border-[#1C2529] rounded-2xl p-6 shadow-xl space-y-4 transition-all"
-            >
-              {/* Discovery Header */}
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#1C2529] pb-3">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-blue-500/15 text-blue-400 border border-blue-500/30">
-                    {disc.badge || 'FACT'}
-                  </span>
-                  <h4 className="font-extrabold text-white text-base md:text-lg tracking-tight">
-                    {disc.title}
-                  </h4>
-                </div>
-                <div className="text-sm font-mono font-bold text-[#B8DBD9] bg-[#0A0D0E] px-3 py-1 rounded-lg border border-[#1C2529]">
-                  {disc.figure}
-                </div>
-              </div>
-
-              {/* Source & Plain English Breakdown */}
-              <div>
-                <span className="text-[11px] font-mono text-[#92979B] uppercase block mb-1">
-                  SOURCE: {disc.source}
-                </span>
-                <p className="text-sm text-[#F1EFE9] leading-relaxed">
-                  {disc.explanation}
-                </p>
-              </div>
-
-              {/* Why It Matters */}
-              <div className="p-3.5 rounded-xl bg-[#101719] border border-[#1C2529] text-xs space-y-1">
-                <span className="font-mono uppercase font-bold text-amber-400 block">
-                  WHY THIS MATTERS:
-                </span>
-                <p className="text-[#92979B] leading-relaxed">
-                  {disc.whyItMatters}
-                </p>
-              </div>
-
-              {/* Auditor Remark */}
-              <div className="p-3.5 rounded-xl bg-[#0A0D0E] border border-[#04724D]/20 text-xs font-mono text-[#B8DBD9] leading-relaxed flex items-start gap-2">
-                <span className="text-base">🎙️</span>
-                <span>"{disc.auditorRemark}"</span>
-              </div>
-
-              {/* Understanding Check */}
-              <div className="pt-2 border-t border-[#1C2529]">
-                <div className="text-xs font-mono text-[#92979B] mb-2">
-                  HOW DOES THIS LAND WITH YOU?
-                </div>
-
-                {!feedback ? (
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: 'understand', label: 'I understand the math' },
-                      { id: 'explain', label: 'Explain simpler' },
-                      { id: 'disagree', label: 'I disagree with this' },
-                      { id: 'action', label: 'What can I do about it?' }
-                    ].map((opt) => (
-                      <button
-                        key={opt.id}
-                        disabled={checkingLoading}
-                        onClick={() => handleCheck(disc.id, opt.label)}
-                        className="px-3 py-1.5 rounded-lg bg-[#101719] hover:bg-[#1C2529] border border-[#1C2529] text-xs font-medium text-white hover:text-[#B8DBD9] transition-colors"
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="p-3 rounded-xl bg-[#0A0D0E] border border-[#1C2529] text-xs space-y-1">
-                    <div className="flex items-center gap-2 text-white font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-[#B8DBD9]" />
-                      <span>You chose: "{feedback.choice}"</span>
-                    </div>
-                    <p className="text-[#92979B] pl-5 italic">
-                      "{feedback.response}"
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Transition to Verdict */}
-      <div className="p-6 rounded-2xl bg-[#0E1315] border border-[#1C2529] flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <div className="font-bold text-white text-sm">Ready for the formal assessment?</div>
-          <p className="text-xs text-[#92979B]">Proceed to hear the Auditor's complete Verdict.</p>
-        </div>
-
-        <button
-          onClick={onProceedToVerdict}
-          className="px-6 py-3 rounded-xl bg-[#04724D] hover:bg-[#03593C] text-white font-black text-sm flex items-center gap-2 shadow-[0_0_20px_rgba(4,114,77,0.3)] transition-all whitespace-nowrap"
-        >
-          <span>PROCEED TO THE VERDICT</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
-      </div>
+    if (findings.length) setPhase('findings'); else onProceedToVerdict();
+  }
+  async function askQuestion(event) {
+    event.preventDefault();
+    if (!question.trim() || !current) return;
+    setExploring(true); setError('');
+    try { setExploration(await exploreDiscovery(session.id, current.id, question.trim())); }
+    catch { setError('We could not open a deeper explanation. Your question is still here.'); }
+    finally { setExploring(false); }
+  }
+  useEffect(() => () => speechService.stop(), []);
+  if (!data || data.version !== 2) return <section className="story-shell"><h1>Reopen your plan</h1><p>This session uses an older reveal. Start a new session to see the source-backed experience.</p></section>;
+  return <section ref={scene} onPointerMove={parallax} onPointerLeave={() => { if (scene.current) { scene.current.style.removeProperty('--parallax-x'); scene.current.style.removeProperty('--parallax-y'); } }} className={`reveal-stage reveal-${phase}`}>
+    <div className="reveal-grain" aria-hidden="true" />
+    <div className="reveal-orbit reveal-orbit-one" aria-hidden="true" /><div className="reveal-orbit reveal-orbit-two" aria-hidden="true" />
+    <div className="reveal-inner">
+      <div className="chapter-line"><span>Your perspective / Your plan</span><span>{session.caseName}</span></div>
+      {phase === 'words' && <div className="words-scene scene-enter">
+        <p className="eyebrow">Before we open the plan</p>
+        <h1 ref={heading} tabIndex={-1} className="quiet-heading">You told us.</h1>
+        {data.userQuote ? <blockquote className="client-quote">“{data.userQuote.text}”</blockquote> : <p className="client-quote">Let’s put your perspective beside the plan.</p>}
+        <p className="quote-attribution">Your words, from our conversation{data.userQuote?.partner ? ` · ${data.userQuote.partner}` : ''}</p>
+        <div className="words-bottom"><p>Keep that thought.<br />Now let’s look at what the plan says.</p><button className="primary-action" onClick={() => setPhase('pause')}>Open my plan <ArrowRight size={19} /></button></div>
+      </div>}
+      {phase === 'pause' && <div className="pause-scene"><div className="reveal-rule" aria-hidden="true" /><h1 ref={heading} tabIndex={-1}>A number is only<br /><em>part of the story.</em></h1><button className="quiet-action" onClick={() => setPhase('score')}><SkipForward size={16} /> Skip transition</button></div>}
+      {phase === 'score' && <div className="score-scene scene-enter">
+        <p className="eyebrow">Perspective meets the plan</p><h1 ref={heading} tabIndex={-1}>{data.actualScore === null ? 'There’s more to explore.' : 'Here’s where we begin.'}</h1>
+        <div className="score-spread"><div className="expectation-block"><span className="eyebrow">Your perspective</span>{Object.keys(data.partnerScores || {}).length > 1 ? Object.entries(data.partnerScores).map(([person, value]) => <div className="partner-score" key={person}><span>{person}</span><strong>{value}<small>/100</small></strong></div>) : <><div className="expected-number">{data.expectedScore}<small>/100</small></div><p>Your estimate before seeing the plan</p></>}</div><div className="actual-block"><span className="eyebrow">In your Sherpas plan</span><div className="actual-number">{data.actualScore ?? '—'}{data.actualScore !== null && <small>/100</small>}</div><p>{data.actualScore === null ? 'No financial health score in this export' : data.band || 'Published financial health score'}</p><SourceDrawer source={data.scoreSource} title="Financial health score" label="Where this score comes from" /></div></div>
+        <div className="score-context"><span className="context-marker" aria-hidden="true" /><div><h2>{data.scoreContext?.title || 'The details matter.'}</h2><p>{data.auditorReaction}</p><button className="voice-action" disabled={isMuted} onClick={() => speechService.speak(`Your estimate was ${data.expectedScore} out of 100. ${data.actualScore === null ? 'This plan does not include a score.' : `Your Sherpas plan score is ${data.actualScore} out of 100.`} ${data.auditorReaction}`)}><Volume2 size={16} /> Listen to the reveal</button></div></div>
+        {findings.length > 1 && <div className="route-chooser"><p className="eyebrow">Choose where to begin</p><p>Your choice changes the first finding and the next step we prepare.</p><div>{findings.map(item => <button key={item.id} aria-pressed={routeChoice === item.id} onClick={() => setRouteChoice(item.id)}><span>{item.badge}</span><strong>{item.title}</strong><ArrowRight size={16} /></button>)}</div></div>}
+        {error && <p role="alert" className="inline-error">{error}</p>}
+        <div className="scene-actions"><button className="quiet-action" onClick={() => setPhase('words')}><ArrowLeft size={17} /> Your words</button><button className="primary-action" disabled={busy} onClick={beginFindings}>{findings.length ? 'Look beyond the score' : 'Continue with the available information'}<ArrowRight size={18} /></button></div>
+      </div>}
+      {phase === 'findings' && current && <div className="finding-layout">
+        <aside className="perspective-rail"><span className="eyebrow">Keep your question in view</span><blockquote>“{data.userQuote?.text || data.priorityQuote}”</blockquote><p>Your words</p><div className="finding-progress" aria-label={`Finding ${index + 1} of ${findings.length}`}>{findings.map((item, i) => <button key={item.id} onClick={() => move(i)} aria-label={`Finding ${i + 1}`} aria-current={i === index ? 'step' : undefined}><span>{String(i + 1).padStart(2, '0')}</span><i /></button>)}</div></aside>
+        <article key={current.id} className="finding-page scene-enter">
+          <div className="finding-kicker"><span>Finding {String(index + 1).padStart(2, '0')}</span><span>{current.badge}</span></div>
+          <h1 ref={heading} tabIndex={-1}>{current.title}</h1>
+          <p className="reflection-question">{current.reflectionQuestion}</p>
+          <button className="voice-action" disabled={isMuted} onClick={() => speechService.speak(`${current.title}. ${current.explanation}. ${current.whyItMatters}`)}><Volume2 size={16} /> Listen to this finding</button>
+          <div className="depth-switch" role="group" aria-label="Explanation depth"><button aria-pressed={!detail} onClick={() => setDetail(false)}><BookOpen size={15} />In plain language</button><button aria-pressed={detail} onClick={() => setDetail(true)}>Numbers & context</button></div>
+          {!detail ? <div className="plain-explanation"><p>{current.explanation}</p><div className="why-note"><span>What to take away</span><p>{current.whyItMatters}</p></div></div> : <div className="numbers-context scene-enter">{current.figure && <div className="finding-figure">{current.figure}</div>}<p>{current.title}</p><dl>{current.source.period && <div><dt>Period</dt><dd>{current.source.period}</dd></div>}{current.source.basis && <div><dt>Basis / assumptions</dt><dd>{current.source.basis}</dd></div>}{current.source.raw?.note && <div><dt>Reading this correctly</dt><dd>{current.source.raw.note}</dd></div>}</dl>{current.badge === 'PLAN TEXT' && <p className="plan-passage">{current.source.raw}</p>}</div>}
+          <SourceDrawer source={current.source} title={current.title} />
+          <form className="deep-dive" onSubmit={askQuestion}><div className="deep-dive-heading"><Sparkles size={17} /><div><h2>Go deeper</h2><p>Ask about this finding. Answers stay linked to the plan.</p></div></div><label className="field-label">Your question<textarea className="editorial-input" rows={2} maxLength={500} value={question} onChange={event => setQuestion(event.target.value)} placeholder="What does this mean for my situation?" /></label><button className="deep-dive-submit" type="submit" disabled={exploring || !question.trim()}>{exploring ? 'Looking at the source…' : 'Explore this finding'} <ArrowRight size={16} /></button>{exploration && <div className="exploration-answer" role="status"><span>{exploration.kind === 'off_topic' ? 'Outside this finding' : exploration.kind === 'unavailable' ? 'Answer unavailable' : 'Based on this plan finding'}</span><p>{exploration.answer}</p>{exploration.kind !== 'off_topic' && <SourceDrawer source={exploration.source} title={current.title} label="Check the source" />}</div>}</form>
+          <div className="understanding-actions"><button disabled={busy} onClick={() => respond('understood')}><Check size={16} /> This makes sense</button><button disabled={busy} onClick={() => respond('discuss')}><MessageCircle size={16} /> Discuss with my advisor</button></div>
+          {feedback[current.id] && <p className="saved-feedback" role="status">{feedback[current.id]}</p>}{error && <p role="alert" className="inline-error">{error}</p>}
+          <div className="scene-actions"><button className="quiet-action" onClick={() => index ? move(index - 1) : setPhase('score')}><ArrowLeft size={17} />Back</button><button className="primary-action" onClick={() => index < findings.length - 1 ? move(index + 1) : onProceedToVerdict()}>{index < findings.length - 1 ? 'Next finding' : 'Bring it together'}<ArrowRight size={18} /></button></div>
+        </article>
+      </div>}
     </div>
-  );
+  </section>;
 }

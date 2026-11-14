@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { flushSync } from 'react-dom';
 import Header from './components/Header';
 import CaseSelection from './stages/CaseSelection';
 import InterrogationStage from './stages/InterrogationStage';
@@ -22,13 +23,18 @@ import {
   submitMissionAcceptance,
   submitFollowUp,
   fetchAdvisorBriefing,
-  fetchUsageStats
+  fetchUsageStats,
+  invitationPath,
+  openInvitation,
 } from './utils/api';
+import { chooseRoute } from './utils/api';
 import { speechService } from './utils/speech';
 
 export default function App() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [transitioning, setTransitioning] = useState(false);
   const [session, setSession] = useState(null);
   const [stage, setStage] = useState('case_selection');
   const [caseDetails, setCaseDetails] = useState(null);
@@ -45,26 +51,36 @@ export default function App() {
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [mockMode, setMockMode] = useState(true);
+  const [publicDemo, setPublicDemo] = useState(false);
+
+  function switchStage(next) {
+    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setStage(next);
+      return;
+    }
+    document.startViewTransition(() => flushSync(() => setStage(next)));
+  }
 
   // Load initial cases and check mock mode status
   useEffect(() => {
     async function init() {
       try {
-        const [loadedCases, stats] = await Promise.all([
-          fetchCases(),
+        const [initial, stats] = await Promise.all([
+          invitationPath ? openInvitation() : fetchCases(),
           fetchUsageStats().catch(() => ({ mockMode: true }))
         ]);
-        setCases(loadedCases);
+        if (!invitationPath) setCases(initial);
+        setPublicDemo(stats?.publicDemo === true);
         if (stats && typeof stats.mockMode === 'boolean') {
           setMockMode(stats.mockMode);
         }
 
         // Restore active session if present in localStorage
-        const savedSessionId = localStorage.getItem('the_plan_audit_session_id');
-        if (savedSessionId) {
+        const savedSessionId = invitationPath ? null : localStorage.getItem('the_plan_audit_session_id');
+        if (invitationPath || savedSessionId) {
           try {
-            const restored = await fetchSession(savedSessionId);
-            if (restored) {
+            const restored = invitationPath ? initial : await fetchSession(savedSessionId);
+            if (restored?.version === 2) {
               setSession(restored);
               setStage(restored.currentStage || 'interrogation');
               if (restored.summary) setInterrogationSummary(restored.summary);
@@ -78,6 +94,7 @@ export default function App() {
           }
         }
       } catch (err) {
+        setError(invitationPath ? 'This invitation could not be opened. Try again or ask your advisor for a new link.' : 'We could not load the client list. Refresh to try again.');
         console.error('Initialization error:', err);
       } finally {
         setLoading(false);
@@ -95,13 +112,15 @@ export default function App() {
   // 1. Select Case & Initialize Session
   const handleSelectCase = async (caseId, coupleMode) => {
     setLoading(true);
+    setError('');
     try {
       speechService.stop();
       const newSession = await createSession(caseId, coupleMode);
       setSession(newSession);
       localStorage.setItem('the_plan_audit_session_id', newSession.id);
-      setStage('interrogation');
+      switchStage('interrogation');
     } catch (err) {
+      setError('We could not open this plan. Please try again.');
       console.error('Failed to create session:', err);
     } finally {
       setLoading(false);
@@ -109,62 +128,74 @@ export default function App() {
   };
 
   // 2. Complete Interrogation & View Summary
-  const handleCompleteInterrogation = async (answers, expectedScore) => {
-    setLoading(true);
+  const handleCompleteInterrogation = async (answers) => {
     try {
       // Save all answers
-      for (const ans of answers) {
-        await submitInterrogationAnswer(session.id, ans);
+      if (!invitationPath) {
+        for (const ans of answers) await submitInterrogationAnswer(session.id, ans);
       }
-      const summary = await fetchSummary(session.id);
+      const summary = await fetchSummary(session.id, invitationPath ? answers.at(-1) : undefined);
       setInterrogationSummary(summary);
-      setStage('summary');
+      setSession(await fetchSession(session.id));
+      switchStage('summary');
     } catch (err) {
       console.error('Failed to generate summary:', err);
-    } finally {
-      setLoading(false);
+      throw err;
     }
   };
 
   // 3. Proceed to Reveal (Expected vs Actual & Discoveries)
   const handleProceedToReveal = async () => {
-    setLoading(true);
+    if (transitioning) return;
+    setTransitioning(true);
+    setError('');
     try {
       const reveal = await fetchReveal(session.id);
       setRevealData(reveal);
-      setStage('reveal');
+      switchStage('reveal');
     } catch (err) {
+      setError('We could not open the reveal. Your answers are saved; try again.');
       console.error('Failed to generate reveal:', err);
     } finally {
-      setLoading(false);
+      setTransitioning(false);
     }
   };
 
   // 4. Proceed to Verdict
   const handleProceedToVerdict = async () => {
-    setLoading(true);
+    if (transitioning) return;
+    setTransitioning(true);
     try {
       const verdict = await fetchVerdict(session.id);
       setVerdictData(verdict);
-      setStage('verdict');
+      switchStage('verdict');
     } catch (err) {
+      setError('We could not prepare the recap. Please try again.');
       console.error('Failed to generate verdict:', err);
     } finally {
-      setLoading(false);
+      setTransitioning(false);
     }
+  };
+
+  const handleChooseRoute = async (discoveryId) => {
+    const reveal = await chooseRoute(session.id, discoveryId);
+    setRevealData(reveal);
+    setSession(await fetchSession(session.id));
   };
 
   // 5. Proceed to Mission
   const handleProceedToMission = async () => {
-    setLoading(true);
+    if (transitioning) return;
+    setTransitioning(true);
     try {
       const mission = await fetchMission(session.id);
       setMissionData(mission);
-      setStage('mission');
+      switchStage('mission');
     } catch (err) {
+      setError('We could not prepare the next step. Please try again.');
       console.error('Failed to generate mission:', err);
     } finally {
-      setLoading(false);
+      setTransitioning(false);
     }
   };
 
@@ -178,23 +209,28 @@ export default function App() {
       return result;
     } catch (err) {
       console.error('Failed to submit mission decision:', err);
+      throw err;
     }
   };
 
   // 7. Proceed to Follow-Up (Day 3 & Day 30)
   const handleProceedToFollowUp = () => {
-    setStage('followup');
+    switchStage('followup');
   };
 
   const handleSubmitFollowUp = async (day, status, details = '') => {
     const res = await submitFollowUp(session.id, day, status, details);
+    const updated = await fetchSession(session.id);
+    setSession(updated);
+    setMissionData(updated.mission);
     return res;
   };
 
   // Demo Time Travel (FAST FORWARD 30 DAYS)
   const handleTimeTravel = async () => {
-    if (!session) return;
-    setStage('followup');
+    if (!session || !missionData) return;
+    setSession(prev => ({ ...prev, simulatedDay: 30 }));
+    switchStage('followup');
     speechService.speak("Fast forwarding simulated timeline 30 days for jury demonstration.", null, null);
   };
 
@@ -206,16 +242,18 @@ export default function App() {
       setBriefingData(briefing);
       setIsBriefingModalOpen(true);
     } catch (err) {
+      setError('The briefing is available after exploring the plan. Please try again then.');
       console.error('Failed to fetch briefing:', err);
     }
   };
 
   // Reset Audit to start over
   const handleResetSession = () => {
+    setError('');
     speechService.stop();
     localStorage.removeItem('the_plan_audit_session_id');
     setSession(null);
-    setStage('case_selection');
+    switchStage('case_selection');
     setInterrogationSummary(null);
     setRevealData(null);
     setVerdictData(null);
@@ -224,7 +262,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0D0E] text-[#F1EFE9] flex flex-col font-sans">
+    <div className={`app-shell ${stage === 'reveal' ? 'app-reveal' : ''}`}>
       {/* Top Header & Navigation */}
       <Header
         session={session}
@@ -234,24 +272,28 @@ export default function App() {
         onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
         onOpenCostMonitor={() => setIsCostModalOpen(true)}
         onTimeTravel={handleTimeTravel}
-        onResetSession={handleResetSession}
+        onResetSession={invitationPath ? undefined : handleResetSession}
         mockMode={mockMode}
-        showCostMonitor={import.meta.env.DEV}
+        showCostMonitor={import.meta.env.DEV && !invitationPath}
+        canTimeTravel={Boolean(missionData)}
+        canOpenBriefing={!invitationPath && Boolean(revealData)}
       />
 
       {/* Main Content Body */}
       <main className="flex-1 flex flex-col justify-center">
+        {error && <div role="alert" className="app-error">{error}<button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
+        {transitioning && <div className="app-status" role="status">Preparing the findings from your plan…</div>}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 space-y-4">
             <div className="w-12 h-12 rounded-full border-2 border-[#1C2529] border-t-[#04724D] animate-spin"></div>
             <span className="text-xs font-mono uppercase tracking-widest text-[#92979B]">
-              CALIBRATING AUDIT ROOM...
+              Opening your plan…
             </span>
           </div>
         ) : (
           <>
-            {stage === 'case_selection' && (
-              <CaseSelection cases={cases} onSelectCase={handleSelectCase} />
+            {stage === 'case_selection' && !invitationPath && (
+              <CaseSelection cases={cases} onSelectCase={handleSelectCase} onImported={async () => setCases(await fetchCases())} publicDemo={publicDemo} />
             )}
 
             {stage === 'interrogation' && session && (
@@ -259,6 +301,7 @@ export default function App() {
                 session={session}
                 caseData={cases.find(c => c.id === session.caseId)}
                 onCompleteInterrogation={handleCompleteInterrogation}
+                onSaveAnswer={invitationPath ? answer => submitInterrogationAnswer(session.id, answer) : undefined}
                 isMuted={isMuted}
               />
             )}
@@ -268,7 +311,7 @@ export default function App() {
                 summary={interrogationSummary}
                 session={session}
                 onProceedToReveal={handleProceedToReveal}
-                onEditAnswers={() => setStage('interrogation')}
+                onEditAnswers={() => switchStage('interrogation')}
               />
             )}
 
@@ -277,6 +320,8 @@ export default function App() {
                 revealData={revealData}
                 session={session}
                 onProceedToVerdict={handleProceedToVerdict}
+                onChooseRoute={handleChooseRoute}
+                isMuted={isMuted}
               />
             )}
 
@@ -299,11 +344,12 @@ export default function App() {
 
             {stage === 'followup' && session && (
               <FollowUpStage
+                key={`${session.id}-${session.simulatedDay}`}
                 session={session}
                 mission={missionData}
                 onSubmitFollowUp={handleSubmitFollowUp}
-                onResetAudit={handleResetSession}
-                onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
+                onResetAudit={invitationPath ? undefined : handleResetSession}
+                onOpenAdvisorBriefing={invitationPath ? undefined : handleOpenAdvisorBriefing}
               />
             )}
           </>
@@ -311,7 +357,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#1C2529] px-6 py-4 text-center font-mono text-[10px] tracking-wide text-[#586F7C]">THE PLAN AUDIT | SHERPAS x UPV SIGMA DATA CLUB | 2026</footer>
+      <footer className="app-footer"><span>The Plan Audit</span><span>Built for the Sherpas × UPV challenge · 2026</span></footer>
 
       {/* Modals */}
       <CostMonitorModal
