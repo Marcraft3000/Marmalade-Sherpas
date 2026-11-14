@@ -1,7 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto';
 import express from 'express';
 import { AuditEngine } from './auditEngine.mjs';
-import { getAllCasesOverview, getCaseDetails } from './casesService.mjs';
+import { getAllCasesOverview, getCaseDetails, preparePlanImport, sampleReportPath } from './casesService.mjs';
+import { analyzePlan } from './planInference.mjs';
 
 const enabled = process.env.ADVISOR_PORTAL === 'true';
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -81,8 +82,7 @@ function advisorView(row) {
   };
 }
 
-async function findInvitation(req) {
-  const token = req.get('X-Audit-Invite');
+async function findInvitation(token) {
   if (!tokenPattern.test(token || '')) throw new PortalError(404, 'This invitation could not be opened.');
   const [invitation] = await table('audit_invitations', {
     token_hash: `eq.${createHash('sha256').update(token).digest('hex')}`,
@@ -90,6 +90,18 @@ async function findInvitation(req) {
   });
   if (!invitation) throw new PortalError(404, 'This invitation could not be opened.');
   return invitation;
+}
+
+async function resolveAdvisorPlan(caseId, advisorId) {
+  if (typeof caseId !== 'string') return null;
+  if (!caseId.startsWith('import-')) return getCaseDetails(caseId);
+  const [plan] = await table('audit_plans', { id: `eq.${caseId}`, advisor_id: `eq.${advisorId}`, select: 'plan' });
+  return plan?.plan ?? null;
+}
+
+function advisorPlanInput(operation) {
+  try { return operation(); }
+  catch (error) { throw new PortalError(400, error.message); }
 }
 
 export function configureAdvisorPortal(app) {
@@ -119,15 +131,35 @@ export function configureAdvisorPortal(app) {
     res.sendStatus(204);
   });
   advisor.use(signedIn);
+  advisor.post('/plans/inspect', route(async (req, res) => {
+    let inspection;
+    try { inspection = await analyzePlan(req.body?.document, { privateAdvisor: true }); }
+    catch (error) { throw new PortalError(400, error.message); }
+    res.json({ inspection });
+  }));
+  advisor.post('/plans/import', route(async (req, res) => {
+    const { plan } = advisorPlanInput(() => preparePlanImport(req.body?.document, req.body?.options));
+    const record = { id: plan.id, advisor_id: req.advisor.id, name: plan.meta.name, couple_mode: plan.meta.coupleMode, plan };
+    await table('audit_plans', {}, { method: 'POST', body: record });
+    res.status(201).json({ case: { id: plan.id, name: plan.meta.name, coupleMode: plan.meta.coupleMode, imported: true } });
+  }));
   advisor.get('/workspace', route(async (req, res) => {
-    const rows = await table('audit_invitations', { advisor_id: `eq.${req.advisor.id}`, select: 'id,created_at,opened_at,session', order: 'created_at.desc' });
-    const plans = getAllCasesOverview().filter(plan => !plan.imported).map(({ id, name, coupleMode }) => ({ id, name, coupleMode }));
+    const scope = { advisor_id: `eq.${req.advisor.id}`, order: 'created_at.desc' };
+    const [rows, imported] = await Promise.all([
+      table('audit_invitations', { ...scope, select: 'id,created_at,opened_at,session' }),
+      table('audit_plans', { ...scope, select: 'id,name,couple_mode' }),
+    ]);
+    const plans = [
+      ...imported.map(({ id, name, couple_mode }) => ({ id, name, coupleMode: couple_mode, imported: true })),
+      ...getAllCasesOverview().filter(plan => !plan.imported).map(({ id, name, coupleMode }) => ({ id, name, coupleMode })),
+    ];
     res.json({ email: req.advisor.email, plans, invitations: rows.map(advisorView) });
   }));
   advisor.post('/invitations', route(async (req, res) => {
     const { caseId, coupleMode } = req.body || {};
-    if (!getCaseDetails(caseId) || caseId.startsWith('import-')) throw new PortalError(400, 'Choose a sample plan.');
-    const session = new AuditEngine().createSession(caseId, coupleMode === true);
+    const plan = await resolveAdvisorPlan(caseId, req.advisor.id);
+    if (!plan) throw new PortalError(400, 'Choose a plan in your workspace.');
+    const session = new AuditEngine(() => plan).createSession(caseId, coupleMode === true);
     const token = randomBytes(32).toString('base64url');
     const [row] = await table('audit_invitations', {}, {
       method: 'POST',
@@ -143,29 +175,42 @@ export function configureAdvisorPortal(app) {
     if (!uuidPattern.test(req.params.id)) throw new PortalError(404, 'Invitation not found.');
     const [row] = await table('audit_invitations', { id: `eq.${req.params.id}`, advisor_id: `eq.${req.advisor.id}`, select: 'id,created_at,opened_at,session' });
     if (!row) throw new PortalError(404, 'Invitation not found.');
-    res.json({ invitation: advisorView(row), answers: row.session.answers });
+    const engine = new AuditEngine();
+    engine.sessions.set(row.session.id, row.session);
+    const briefing = row.session.reveal?.version === 2 ? engine.getAdvisorBriefing(row.session.id) : null;
+    res.json({ invitation: advisorView(row), answers: row.session.answers, briefing });
   }));
   app.use('/api/advisor', advisor);
 
   client.get('/open', route(async (req, res) => {
-    const row = await findInvitation(req);
+    const row = await findInvitation(req.get('X-Audit-Invite'));
     if (!row.opened_at) {
       await table('audit_invitations', { id: `eq.${row.id}`, opened_at: 'is.null' }, { method: 'PATCH', body: { opened_at: new Date().toISOString() } });
     }
-    res.json({ session: row.session });
+    const session = row.session.caseId.startsWith('import-') ? row.session : new AuditEngine().restoreSession(row.session);
+    res.json({ session });
   }));
   app.use('/api/invitations', client);
+
+  app.get('/audit/:token/report', route(async (req, res) => {
+    const row = await findInvitation(req.params.token);
+    const report = sampleReportPath(row.session.caseId);
+    if (!report) throw new PortalError(404, 'This plan has no report attached.');
+    res.sendFile(report);
+  }));
 
   app.use('/api/audit', route(async (req, res, next) => {
     if (['/session/new', '/briefing'].includes(req.path.replace(/\/$/, '').toLowerCase())) {
       throw new PortalError(404, 'This action is only available in the advisor workspace.');
     }
-    const row = await findInvitation(req);
+    const row = await findInvitation(req.get('X-Audit-Invite'));
     const sessionId = req.method === 'GET' ? req.path.split('/')[2] : req.body?.sessionId;
     if (sessionId !== row.session.id) throw new PortalError(404, 'This audit session could not be opened.');
 
-    req.auditEngine = new AuditEngine();
-    req.auditEngine.sessions.set(sessionId, row.session);
+    const plan = await resolveAdvisorPlan(row.session.caseId, row.advisor_id);
+    if (!plan) throw new PortalError(404, 'The plan for this invitation is unavailable.');
+    req.auditEngine = new AuditEngine(() => plan, { liveQuestions: process.env.ADVISOR_QUESTIONS_AI === 'true' });
+    req.auditEngine.restoreSession(row.session);
     req.saveAuditSession = async session => {
       const [updated] = await table('audit_invitations', { id: `eq.${row.id}`, revision: `eq.${row.revision}` }, {
         method: 'PATCH',

@@ -43,6 +43,9 @@ test('desktop: literal quote, tension, real finding, sources, mission and check-
   await page.screenshot({ path: 'test-results/finding-desktop.png', fullPage: true, animations: 'disabled' });
   await page.getByRole('button', { name: 'Numbers & context' }).click();
   await expect(page.locator('.finding-figure')).toHaveText('$1,448,672.53');
+  await expect(page.getByRole('heading', { name: 'Projected net worth' })).toBeVisible();
+  await page.getByText('View yearly figures', { exact: true }).click();
+  await expect(page.getByRole('table', { name: 'Projected net worth by year' })).toBeVisible();
   await page.getByRole('button', { name: 'Open the source', exact: true }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog')).toContainText('In your plan');
@@ -50,6 +53,9 @@ test('desktop: literal quote, tension, real finding, sources, mission and check-
   await expect(page.getByRole('dialog')).not.toContainText('replaces');
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Open the source', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'This surprised me' }).click();
+  await expect(page.getByRole('status')).toContainText('Saved as something that surprised you');
+  await page.getByLabel('Your question').fill('Which assumption matters most?');
   await page.getByRole('button', { name: 'Discuss with my advisor' }).click();
   await expect(page.getByRole('status')).toContainText('Saved for your advisor');
   await page.getByRole('button', { name: 'Next finding', exact: true }).click();

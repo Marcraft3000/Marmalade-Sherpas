@@ -97,6 +97,32 @@
 .exploration-answer > span { color: #acc8ae; font: 10px 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .1em; }
 .exploration-answer p { font-size: 15px; line-height: 1.75; margin: 12px 0; }
 .exploration-answer .source-link { color: #bedaba; }
+
+.source-page { padding: 2px 6px; border: 1px solid currentColor; border-radius: 4px; font-size: 10px; white-space: nowrap; }
+.source-report { margin-top: 24px; padding: 16px; border: 1px solid var(--line); }
+.source-report h3 { font-size: 15px; font-weight: 600; }
+.source-report blockquote { margin-top: 8px; color: var(--muted); line-height: 1.55; }
+.projection-chart { margin-top: 20px; padding: clamp(14px, 4vw, 24px); border: 1px solid #ffffff38; background: #ffffff09; }
+.projection-chart h2 { margin-bottom: 6px; font-size: clamp(19px, 3vw, 26px); }
+.projection-chart p { margin-top: 5px; color: #cbdacd; font-size: 13px; }
+.projection-chart svg { display: block; width: 100%; margin-top: 12px; }
+.projection-chart svg text { fill: #d1dfd2; font: 15px 'DM Sans', sans-serif; }
+.projection-chart svg circle { fill: #c3eca1; }
+.projection-gridline { stroke: #ffffff40; }
+.projection-line { fill: none; stroke: #c3eca1; stroke-width: 2.5; vector-effect: non-scaling-stroke; }
+.projection-chart details { margin-top: 14px; font-size: 13px; }
+.projection-chart summary { cursor: pointer; }
+.projection-data { max-height: 220px; overflow: auto; margin-top: 12px; }
+.projection-data table { width: 100%; font-variant-numeric: tabular-nums; }
+.projection-data th, .projection-data td { padding: 5px 8px; text-align: left; border-bottom: 1px solid #ffffff24; }
+.mission-options { max-width: 490px; margin-top: 24px; }
+.import-findings { display: grid; gap: 14px; margin-block: 14px; min-width: 0; }
+.import-findings fieldset { min-width: 0; padding: 0 12px; border: 1px solid var(--line); }
+.import-findings legend { max-width: 100%; color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.import-finding-units { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.import-finding-units > label { min-width: 0; }
+.import-projection { padding-block: 12px; border-block: 1px solid var(--line); }
+.import-projection summary { cursor: pointer; }
 .checkpoint-list { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 36px 0; }
 .checkpoint-list > .eyebrow { grid-column: 1 / -1; }
 .checkpoint-list > div { padding: 23px; border-top: 2px solid #04724d; background: #e6ecdf; }

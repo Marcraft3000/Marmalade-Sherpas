@@ -1,10 +1,47 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, Clipboard, Link2, LogOut, RefreshCw } from 'lucide-react';
 import { advisorRequest } from '../utils/api';
+import PlanImport from './PlanImport';
 import './advisor.css';
 
 const statuses = { pending: 'Pending', in_progress: 'In progress', answered: 'Answered' };
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+
+function MeetingBrief({ briefing }) {
+  const score = value => value == null ? 'Unavailable' : `${value} / 100`;
+  const partners = Object.entries(briefing.partnerScores || {});
+  return <section className="meeting-brief" aria-label="Prepare the next meeting">
+    <h3>Prepare the next meeting</h3>
+    <dl className="meeting-scores">
+      {partners.length > 1
+        ? partners.map(([partner, value]) => <div key={partner}><dt>{partner} estimated</dt><dd>{score(value)}</dd></div>)
+        : <div><dt>Client estimated</dt><dd>{score(briefing.expectedScore)}</dd></div>}
+      <div><dt>Plan score</dt><dd>{score(briefing.verifiedScore)}</dd></div>
+    </dl>
+    {briefing.surprisedBy.length > 0 && <section>
+      <h4>What surprised the client</h4>
+      <ul>{briefing.surprisedBy.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </section>}
+    {briefing.discussionFindings.length > 0 && <section>
+      <h4>Findings the client wants to discuss</h4>
+      <ul>{briefing.discussionFindings.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </section>}
+    {briefing.exploredQuestions.length > 0 && <section>
+      <h4>Client questions</h4>
+      <ul>{briefing.exploredQuestions.map(({ question, finding }, i) => <li key={i}>
+        {question}{finding && <small>{finding}</small>}
+      </li>)}</ul>
+    </section>}
+    <section>
+      <h4>Next step</h4>
+      {briefing.mission?.accepted
+        ? <><p><strong>{briefing.mission.title}</strong></p><p>{briefing.mission.step}</p></>
+        : <p>The client has yet to commit to a step.</p>}
+      {briefing.mission?.barrier && <p>{briefing.mission.barrier}</p>}
+      {briefing.followUp.map(({ day, status, note }, index) => <p key={index}>Day {day} · {status.replaceAll('_', ' ')}{note ? ` · ${note}` : ''}</p>)}
+    </section>
+  </section>;
+}
 
 export default function AdvisorPortal() {
   const [workspace, setWorkspace] = useState(null);
@@ -115,18 +152,24 @@ export default function AdvisorPortal() {
             <section className="advisor-panel">
               <h2>Invite a client</h2>
               <form onSubmit={createInvitation}>
-                <label className="field-label">Sample plan
+                <label className="field-label">Client plan
                   <select className="editorial-input" value={planId} onChange={event => {
                     setPlanId(event.target.value);
                     setCoupleMode(true);
                     setLink('');
                   }}>
-                    {workspace.plans.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
+                    {workspace.plans.map(item => <option key={item.id} value={item.id}>{item.name}{item.imported ? '' : ' (sample)'}</option>)}
                   </select>
                 </label>
                 {plan?.coupleMode && <label className="advisor-checkbox"><input type="checkbox" checked={coupleMode} onChange={event => setCoupleMode(event.target.checked)} /> Include both perspectives</label>}
                 <button className="primary-action" disabled={!planId || busy}>Create invitation <Link2 size={17} /></button>
               </form>
+              <PlanImport privateAdvisor onImported={item => {
+                setWorkspace(previous => ({ ...previous, plans: [item, ...previous.plans] }));
+                setPlanId(item.id);
+                setLink('');
+                setCoupleMode(true);
+              }} />
               {link && <div className="advisor-link">
                 <label className="field-label">Invitation link<input className="editorial-input" value={link} readOnly onFocus={event => event.target.select()} /></label>
                 <button className="quiet-action" onClick={copyLink}><Clipboard size={16} /> Copy link</button>
@@ -151,6 +194,7 @@ export default function AdvisorPortal() {
                     <span className="advisor-status" data-status={item.status}>{statuses[item.status]}</span>
                   </button>
                   {detail?.invitation.id === item.id && <div className="advisor-answers">
+                    {detail.briefing && <MeetingBrief briefing={detail.briefing} />}
                     {!detail.answers.length ? <p>No responses yet.</p> : <dl>
                       {detail.answers.map(answer => <div key={`${answer.category}-${answer.partner || ''}`}>
                         <dt>{answer.question || answer.category.replaceAll('_', ' ')}{answer.partner && ` · ${answer.partner}`}</dt>

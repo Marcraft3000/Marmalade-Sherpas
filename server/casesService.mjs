@@ -9,6 +9,11 @@ const CASES_DIR = path.resolve(here, '../cases');
 const IMPORTS_DIR = process.env.PLAN_IMPORT_DIR || path.resolve(here, '../data/imports');
 const PUBLIC_DEMO = process.env.PUBLIC_DEMO === 'true';
 const imported = new Map();
+export function sampleReportPath(caseId) {
+  if (typeof caseId !== 'string' || !/^[\w-]+$/.test(caseId)) return null;
+  const reportPath = path.join(CASES_DIR, caseId, 'report.pdf');
+  return fs.existsSync(reportPath) ? reportPath : null;
+}
 function read(file) {
   try { return JSON.parse(fs.readFileSync(file, 'utf8')); } catch { return null; }
 }
@@ -34,12 +39,25 @@ export function getCaseDetails(caseId) {
   }
   const document = read(path.join(CASES_DIR, caseId, 'financial-health.json'));
   if (!document) return null;
-  try { return normalizePlan(document, { id: caseId }); } catch { return null; }
+  const reportSources = sampleReportPath(caseId)
+    ? read(path.join(here, 'report-sources', `${caseId}.json`))
+    : null;
+  try { return normalizePlan(document, { id: caseId, reportSources }); } catch { return null; }
+}
+export function preparePlanImport(document, options = {}) {
+  const safeOptions = {
+    filename: path.basename(String(options.filename || 'client-plan.json')),
+    displayName: String(options.displayName || '').slice(0, 150),
+    mapping: options.mapping || {},
+    metricMappings: options.metricMappings || [],
+    projectionMapping: options.projectionMapping || null,
+  };
+  const plan = normalizePlan(document, { ...safeOptions, id: `import-${randomUUID()}` });
+  return { plan, options: safeOptions };
 }
 export function importPlan(document, options = {}, { persist = true } = {}) {
-  const id = `import-${randomUUID()}`;
-  const safeOptions = { filename: path.basename(String(options.filename || 'client-plan.json')), displayName: String(options.displayName || '').slice(0, 150), mapping: options.mapping || {} };
-  const plan = normalizePlan(document, { ...safeOptions, id });
+  const { plan, options: safeOptions } = preparePlanImport(document, options);
+  const { id } = plan;
   if (persist) {
     fs.mkdirSync(IMPORTS_DIR, { recursive: true });
     fs.writeFileSync(path.join(IMPORTS_DIR, `${id}.json`), JSON.stringify({ document, options: safeOptions }), { encoding: 'utf8', flag: 'wx' });

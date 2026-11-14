@@ -1,0 +1,20 @@
+{
+  "/narrative/summary_main": { "page": 4, "section": "Summary" },
+  "/narrative/summary_recommendations": { "page": 4, "section": "Recommendations" },
+  "/key_metrics/facts/cash/accessibleCash": { "page": 10, "section": "Emergency fund", "excerpt": "Your $30,000 of accessible cash covers about 3.2 months of your $9,306 in monthly expenses" },
+  "/key_metrics/facts/cash/monthsCovered": { "page": 10, "section": "Emergency fund", "excerpt": "Your $30,000 of accessible cash covers about 3.2 months of your $9,306 in monthly expenses" },
+  "/key_metrics/facts/cash/emergencyReserve": { "page": 10, "section": "Emergency fund" },
+  "/key_metrics/facts/cash/totalCashNeeded": { "page": 10, "section": "Emergency fund", "excerpt": "rises to $163,330 to $172,636, and the months your cash would cover after those goals fall to 0." },
+  "/key_metrics/facts/cash/monthsCoveredAfterNearTermGoals": { "page": 10, "section": "Emergency fund", "excerpt": "the months your cash would cover after those goals fall to 0." },
+  "/key_metrics/facts/cash/nearTermGoals/0": { "page": 10, "section": "Emergency fund" },
+  "/key_metrics/facts/cash/nearTermGoals/1": { "page": 10, "section": "Emergency fund" },
+  "/key_metrics/facts/retirement/savingsRunOut": { "page": 5, "section": "Retirement & Goals", "excerpt": "savings and investments are projected to run out at age 85" },
+  "/key_metrics/facts/retirement/spendingGap": { "page": 12, "section": "Summary", "excerpt": "supply about $59,613 per year on average." },
+  "/key_metrics/facts/retirement/averagePortfolioDraw": { "page": 12, "section": "Summary" },
+  "/key_metrics/facts/retirement/spendingNeed": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/incomeShareOfNeed": { "page": 5, "section": "Retirement & Goals", "excerpt": "Guaranteed income, which is Social Security only, covers 34% of an $89,649 yearly spending need." },
+  "/key_metrics/facts/retirement/withdrawalRateAverage": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/netCashFlowThisYear": { "page": 9, "section": "Savings & Expenses", "excerpt": "Even so, your net cash flow is -$8,336 a year." },
+  "/score/top_moves/0": { "page": 11, "section": "Umbrella insurance" },
+  "/projections/yearly": { "page": 5, "section": "Your net worth projection" }
+}

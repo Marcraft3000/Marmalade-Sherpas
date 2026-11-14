@@ -32,7 +32,12 @@ export function inspectPlan(document) {
   const roots = [];
   walkJson(document, (value, pointer) => {
     if (fields.length < 4000 && (typeof value === 'string' || typeof value === 'number' || Array.isArray(value))) {
-      fields.push({ path: pointer, type: Array.isArray(value) ? 'array' : typeof value, preview: Array.isArray(value) ? `${value.length} items` : String(value).slice(0, 110) });
+      const field = { path: pointer, type: Array.isArray(value) ? 'array' : typeof value, preview: Array.isArray(value) ? `${value.length} items` : String(value).slice(0, 110) };
+      if (Array.isArray(value) && value.length >= 2 && object(value[0])) {
+        const keys = Object.keys(value[0]).filter(key => Number.isFinite(value[0][key])).slice(0, 20);
+        if (keys.length >= 2) field.seriesKeys = keys;
+      }
+      fields.push(field);
     }
     if (object(value) && (value.part === 'financial-health' || (object(value.score) && 'published_score' in value.score) || (value.case && value.key_metrics))) roots.push({ value, path: pointer });
   });
@@ -62,7 +67,25 @@ function kindFor(raw, pointer) {
   return 'PLAN DATA';
 }
 
-export function normalizePlan(document, { id, filename = 'financial-health.json', mapping = {}, displayName = '' } = {}) {
+export function mappedProjection(document, mapping) {
+  if (!mapping || typeof mapping.path !== 'string' || typeof mapping.yearKey !== 'string' || typeof mapping.valueKey !== 'string') return null;
+  const title = textValue(mapping.title).slice(0, 120);
+  const rows = atPointer(document, mapping.path);
+  if (!Array.isArray(rows) || rows.length < 2 || rows.length > 200 || !title || mapping.yearKey === mapping.valueKey) return null;
+  const points = rows.map(row => ({ year: row?.[mapping.yearKey], value: row?.[mapping.valueKey] }));
+  if (!points.every((point, i) => Number.isSafeInteger(point.year) && point.year >= 1000 && point.year <= 9999
+    && Number.isFinite(point.value) && (!i || point.year > points[i - 1].year))) return null;
+  if (!Number.isFinite(Math.max(0, ...points.map(p => p.value)) - Math.min(0, ...points.map(p => p.value)))) return null;
+  return {
+    title,
+    unit: textValue(mapping.unit).slice(0, 24),
+    basis: textValue(mapping.basis).slice(0, 200),
+    path: mapping.path,
+    points,
+  };
+}
+
+export function normalizePlan(document, { id, filename = 'financial-health.json', mapping = {}, displayName = '', metricMappings = [], projectionMapping = null, reportSources = null } = {}) {
   const inspection = inspectPlan(document);
   const assigned = { ...inspection.mapping, ...mapping };
   const supported = ['name', 'score', 'household', 'summary', 'recommendations'];
@@ -77,6 +100,23 @@ export function normalizePlan(document, { id, filename = 'financial-health.json'
   if (read('score') !== undefined && scoreNumber(read('score')) === null) throw new Error('Map a numeric financial health score between 0 and 100. Other score scales need conversion before import.');
   if (read('household') !== undefined && !Array.isArray(read('household'))) throw new Error('Household must be an array.');
   const root = inspection.rootPath !== null ? atPointer(document, inspection.rootPath) : {};
+  const reviewedProjection = mappedProjection(document, projectionMapping);
+  if (projectionMapping && !reviewedProjection) throw new Error('The chart needs a title and a source series with distinct, increasing years and numeric values.');
+  const projection = inspection.recognized ? mappedProjection(document, {
+    path: `${inspection.rootPath}/projections/yearly`, yearKey: 'year', valueKey: 'net_worth_todays_dollars',
+    title: 'Projected net worth', unit: 'USD', basis: "Today's dollars at the plan date",
+  }) : null;
+  function sourceFor(pointer, raw) {
+    const reference = reportSources?.[pointer];
+    const report = Number.isSafeInteger(reference?.page) && reference.page > 0
+      ? { caseId: id, page: reference.page, section: reference.section, excerpt: reference.excerpt }
+      : null;
+    return { document: filename, path: pointer, raw, basis: textValue(raw?.basis), period: textValue(raw?.period), ...(report ? { report } : {}) };
+  }
+  if (projection) {
+    projection.note = 'Net worth includes assets such as your home.';
+    projection.report = sourceFor(projection.path).report;
+  }
   const household = (read('household') || []).filter(object).map(person => ({ ...person, first_name: textValue(person.first_name) || textValue(person.name), role: textValue(person.role) }));
   const partners = household.filter(person => /^(client|spouse|partner|co-client|coclient)$/i.test(person.role)).map(person => person.first_name).filter(Boolean);
   const name = textValue(read('name')) || textValue(displayName) || partners.join(' & ') || 'Imported client';
@@ -92,27 +132,49 @@ export function normalizePlan(document, { id, filename = 'financial-health.json'
       title: raw.label, figure: displayMetric(raw), badge: kindFor(raw, pointer),
       explanation: [raw.label + '.', raw.period ? `The period covered is ${raw.period}.` : '', textValue(raw.note)].filter(Boolean).join(' '),
       whyItMatters: 'Read this in the context of your goals, alongside the rest of your plan.',
-      source: { document: filename, path: pointer, raw, basis: textValue(raw.basis), period: textValue(raw.period) },
+      source: sourceFor(pointer, raw),
+      ...((projection && pointer.startsWith(`${inspection.rootPath}/key_metrics/facts/retirement/`)
+        && !/\/netCashFlowThisYear$/.test(pointer)) ? { projection } : {}),
     });
   });
+  if (!Array.isArray(metricMappings) || metricMappings.length > 8) throw new Error('Choose up to eight additional findings.');
+  for (const metric of metricMappings) {
+    const pointer = metric?.path;
+    const value = atPointer(document, pointer);
+    const title = textValue(metric?.label).slice(0, 140);
+    if (!title || !['number', 'string'].includes(typeof value) || (typeof value === 'string' && !value.trim())) {
+      throw new Error('Each additional finding needs a label and a value from the source file.');
+    }
+    if (evidence.some(({ source }) => source.path === pointer
+      || (object(source.raw) && ['value', 'min', 'max'].some(key => pointer === `${source.path}/${key}`)))) continue;
+    const unit = textValue(metric.unit).slice(0, 24);
+    const period = textValue(metric.period).slice(0, 120);
+    evidence.push({
+      id: `e-${createHash('sha256').update(pointer).digest('hex').slice(0, 12)}`,
+      title, figure: displayMetric({ value, unit }), badge: 'PLAN DATA',
+      explanation: `Your plan lists ${displayMetric({ value, unit })} for this item.`,
+      whyItMatters: 'Discuss what this figure means for your goals with your advisor.',
+      source: { ...sourceFor(pointer, value), unit, period },
+    });
+  }
   for (const key of ['summary', 'recommendations']) {
     const value = textValue(read(key));
-    if (value) evidence.push({ id: `e-${key}`, title: key === 'summary' ? 'The bigger picture' : 'What your plan recommends', figure: '', badge: 'PLAN TEXT', explanation: value, whyItMatters: 'This passage comes directly from your plan.', source: { document: filename, path: assigned[key], raw: value, basis: '', period: '' } });
+    if (value) evidence.push({ id: `e-${key}`, title: key === 'summary' ? 'The bigger picture' : 'What your plan recommends', figure: '', badge: 'PLAN TEXT', explanation: value, whyItMatters: 'This passage comes directly from your plan.', source: sourceFor(assigned[key], value) });
   }
-  if (score === null && !evidence.length) throw new Error('No usable plan content found. Map a summary, recommendations or a financial health score before importing.');
+  if (score === null && !evidence.length && !reviewedProjection) throw new Error('No usable plan content found. Map a summary, recommendations or a financial health score before importing.');
   const warning = evidence.find(item => /\/savingsRunOut$/.test(item.source.path) && /run(?:s)? out at age \d+/i.test(item.title) && !/\b(?:not|never)\b/i.test(item.title));
   const recommendations = textValue(read('recommendations'));
   const actions = (Array.isArray(root.score?.top_moves) ? root.score.top_moves : []).flatMap((move, index) => {
     if (!object(move) || !textValue(move.title) || !textValue(move.action)) return [];
-    return [{ title: move.title, action: move.action, source: { document: filename, path: `${inspection.rootPath}/score/top_moves/${index}`, raw: move } }];
+    return [{ title: move.title, action: move.action, source: sourceFor(`${inspection.rootPath}/score/top_moves/${index}`, move) }];
   });
   return {
     id, meta: { name, partners, coupleMode: partners.length >= 2, subtitle: '', description: '', hook: '' },
-    score, scoreSource: score === null ? null : { document: filename, path: assigned.score, raw: score }, band: textValue(root.score?.band) || null,
+    score, scoreSource: score === null ? null : sourceFor(assigned.score, score), band: textValue(root.score?.band) || null,
     household, city: textValue(root.case?.city), state: textValue(root.case?.state),
     narrative: { ...(root.narrative || {}), summary_main: textValue(read('summary')), summary_recommendations: recommendations },
-    facts: root.key_metrics?.facts || {}, ratios: root.key_metrics?.ratios || {}, evidence, recommendations, actions,
-    recommendationSource: recommendations ? { document: filename, path: assigned.recommendations, raw: recommendations } : null,
+    facts: root.key_metrics?.facts || {}, ratios: root.key_metrics?.ratios || {}, evidence, recommendations, actions, reviewedProjection,
+    recommendationSource: recommendations ? sourceFor(assigned.recommendations, recommendations) : null,
     scoreContext: score !== null && score >= 80 && warning ? { evidenceId: warning.id, title: 'A strong score. A longer story.', explanation: 'Your overall score and your retirement projection answer different questions. Read both before deciding what to do next.' } : null,
     importInfo: { recognized: inspection.recognized, missing: [score === null ? 'Financial health score' : '', !recommendations ? 'Plan recommendations' : '', !household.length ? 'Household members' : ''].filter(Boolean) },
   };

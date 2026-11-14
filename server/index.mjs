@@ -6,8 +6,8 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM, importPlan } from './casesService.mjs';
-import { inspectPlan } from './planAdapter.mjs';
+import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM, importPlan, sampleReportPath } from './casesService.mjs';
+import { analyzePlan } from './planInference.mjs';
 import { aiService } from './aiService.mjs';
 import { auditEngine } from './auditEngine.mjs';
 import { advisorPortalEnabled, configureAdvisorPortal, portalErrorHandler } from './advisorPortal.mjs';
@@ -54,7 +54,7 @@ function loadSessionsFromDisk() {
     for (const f of files) {
       const data = JSON.parse(fs.readFileSync(path.join(SESSIONS_DIR, f), 'utf8'));
       if (data?.id && (!PUBLIC_DEMO || getCaseDetails(data.caseId))) {
-        auditEngine.sessions.set(data.id, data);
+        auditEngine.restoreSession(data);
       }
     }
   } catch (e) {
@@ -100,8 +100,8 @@ app.get('/api/cases', (req, res) => {
   }
 });
 
-app.post('/api/plans/inspect', (req, res) => {
-  try { res.json({ success: true, inspection: inspectPlan(req.body.document) }); }
+app.post('/api/plans/inspect', async (req, res) => {
+  try { res.json({ success: true, inspection: await analyzePlan(req.body.document) }); }
   catch (err) { res.status(400).json({ success: false, error: err.message }); }
 });
 
@@ -120,6 +120,12 @@ app.get('/api/cases/:id', (req, res) => {
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
+});
+
+app.get('/api/cases/:id/report', (req, res) => {
+  if (advisorPortalEnabled) return res.sendStatus(404);
+  const report = sampleReportPath(req.params.id);
+  return report ? res.sendFile(report) : res.sendStatus(404);
 });
 
 // 3. Create or resume an audit session
@@ -232,8 +238,8 @@ app.post('/api/audit/verdict', async (req, res) => {
 // 9. Generate Mission
 app.post('/api/audit/mission', async (req, res) => {
   try {
-    const { sessionId } = req.body;
-    const mission = await req.auditEngine.generateMission(sessionId);
+    const { sessionId, recommendationId } = req.body;
+    const mission = await req.auditEngine.generateMission(sessionId, recommendationId);
     await saveSession(req, req.auditEngine.getSession(sessionId));
     res.json({ success: true, mission });
   } catch (err) {

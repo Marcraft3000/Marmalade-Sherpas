@@ -43,6 +43,16 @@
 .advisor-answers dl > div { padding: 12px 14px; background: #f0f2e9; border-bottom: 1px solid #f9faf5; }
 .advisor-answers dt { font-size: 12px; color: #51655a; }
 .advisor-answers dd { white-space: pre-wrap; }
+.advisor-panel .import-trigger { margin-top: 14px; }
+.meeting-brief { display: grid; gap: 14px; margin-bottom: 20px; padding: 16px; background: #e8efe1; border: 1px solid #d6e3d0; }
+.meeting-brief h3 { font-size: 23px; line-height: 1.2; }
+.meeting-brief h4 { margin-bottom: 4px; font-size: 14px; font-weight: 650; }
+.meeting-brief ul { list-style: disc; padding-left: 18px; }
+.meeting-brief li + li { margin-top: 5px; }
+.meeting-brief small { display: block; color: #51655a; }
+.meeting-brief .meeting-scores { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 5px; }
+.meeting-brief .meeting-scores > div { padding: 6px 9px; border: 0; background: #f5f7ef; }
+.meeting-scores dd { font-size: 17px; font-variant-numeric: tabular-nums; }
 
 @media (max-width: 730px) {
   .advisor-grid { grid-template-columns: minmax(0, 1fr); }

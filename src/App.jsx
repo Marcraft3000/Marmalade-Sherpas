@@ -200,6 +200,10 @@ export default function App() {
   };
 
   // 6. Accept / Modify Mission
+  const handleChooseRecommendation = async (recommendationId) => {
+    setMissionData(await fetchMission(session.id, recommendationId));
+  };
+
   const handleAcceptMission = async (decision, reason = '') => {
     try {
       const result = await submitMissionAcceptance(session.id, decision, reason);
@@ -336,6 +340,7 @@ export default function App() {
             {stage === 'mission' && session && (
               <MissionStage
                 mission={missionData}
+                  onChooseRecommendation={handleChooseRecommendation}
                 session={session}
                 onAcceptMission={handleAcceptMission}
                 onProceedToFollowUp={handleProceedToFollowUp}

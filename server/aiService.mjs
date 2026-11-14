@@ -91,8 +91,10 @@ export class AIService {
     responseFormat = null,
     purpose = 'general',
     stage = 'interrogation',
+    allowLiveInDemo = false,
   }) {
-    if (this.mockMode) {
+    const permitted = allowLiveInDemo && this.teamKey && process.env.MOCK_AI !== 'true';
+    if (this.mockMode && !permitted) {
       // Zero tokens spent!
       return {
         success: false,

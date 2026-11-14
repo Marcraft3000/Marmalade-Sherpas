@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowLeft, Check, MessageCircle, BookOpen, SkipForward, Volume2, Sparkles } from 'lucide-react';
 import SourceDrawer from '../components/SourceDrawer';
+import ProjectionChart from '../components/ProjectionChart';
 import { submitUnderstandingCheck, exploreDiscovery } from '../utils/api';
 import { speechService } from '../utils/speech';
 
@@ -9,6 +10,8 @@ export default function RevealStage({ revealData: data, session, onProceedToVerd
   const [index, setIndex] = useState(0);
   const [detail, setDetail] = useState(false);
   const [feedback, setFeedback] = useState({});
+  const [surprised, setSurprised] = useState(() => new Set((session.understandingChecks || [])
+    .filter(check => check.choice === 'surprised').map(check => check.discoveryId)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [routeChoice, setRouteChoice] = useState(null);
@@ -29,7 +32,8 @@ export default function RevealStage({ revealData: data, session, onProceedToVerd
   async function respond(choice) {
     setBusy(true); setError('');
     try {
-      const result = await submitUnderstandingCheck(session.id, current.id, choice);
+      const result = await submitUnderstandingCheck(session.id, current.id, choice, choice === 'discuss' ? question : '');
+      if (choice === 'surprised') setSurprised(previous => new Set(previous).add(current.id));
       setFeedback(old => ({ ...old, [current.id]: result.response }));
     } catch { setError('We could not save that response. Please try again.'); }
     finally { setBusy(false); }
@@ -78,6 +82,7 @@ export default function RevealStage({ revealData: data, session, onProceedToVerd
         <div className="score-spread"><div className="expectation-block"><span className="eyebrow">Your perspective</span>{Object.keys(data.partnerScores || {}).length > 1 ? Object.entries(data.partnerScores).map(([person, value]) => <div className="partner-score" key={person}><span>{person}</span><strong>{value}<small>/100</small></strong></div>) : <><div className="expected-number">{data.expectedScore}<small>/100</small></div><p>Your estimate before seeing the plan</p></>}</div><div className="actual-block"><span className="eyebrow">In your Sherpas plan</span><div className="actual-number">{data.actualScore ?? '—'}{data.actualScore !== null && <small>/100</small>}</div><p>{data.actualScore === null ? 'No financial health score in this export' : data.band || 'Published financial health score'}</p><SourceDrawer source={data.scoreSource} title="Financial health score" label="Where this score comes from" /></div></div>
         <div className="score-context"><span className="context-marker" aria-hidden="true" /><div><h2>{data.scoreContext?.title || 'The details matter.'}</h2><p>{data.auditorReaction}</p><button className="voice-action" disabled={isMuted} onClick={() => speechService.speak(`Your estimate was ${data.expectedScore} out of 100. ${data.actualScore === null ? 'This plan does not include a score.' : `Your Sherpas plan score is ${data.actualScore} out of 100.`} ${data.auditorReaction}`)}><Volume2 size={16} /> Listen to the reveal</button></div></div>
         {findings.length > 1 && <div className="route-chooser"><p className="eyebrow">Choose where to begin</p><p>Your choice changes the first finding and the next step we prepare.</p><div>{findings.map(item => <button key={item.id} aria-pressed={routeChoice === item.id} onClick={() => setRouteChoice(item.id)}><span>{item.badge}</span><strong>{item.title}</strong><ArrowRight size={16} /></button>)}</div></div>}
+        {data.reviewedProjection && <ProjectionChart projection={data.reviewedProjection} />}
         {error && <p role="alert" className="inline-error">{error}</p>}
         <div className="scene-actions"><button className="quiet-action" onClick={() => setPhase('words')}><ArrowLeft size={17} /> Your words</button><button className="primary-action" disabled={busy} onClick={beginFindings}>{findings.length ? 'Look beyond the score' : 'Continue with the available information'}<ArrowRight size={18} /></button></div>
       </div>}
@@ -91,8 +96,9 @@ export default function RevealStage({ revealData: data, session, onProceedToVerd
           <div className="depth-switch" role="group" aria-label="Explanation depth"><button aria-pressed={!detail} onClick={() => setDetail(false)}><BookOpen size={15} />In plain language</button><button aria-pressed={detail} onClick={() => setDetail(true)}>Numbers & context</button></div>
           {!detail ? <div className="plain-explanation"><p>{current.explanation}</p><div className="why-note"><span>What to take away</span><p>{current.whyItMatters}</p></div></div> : <div className="numbers-context scene-enter">{current.figure && <div className="finding-figure">{current.figure}</div>}<p>{current.title}</p><dl>{current.source.period && <div><dt>Period</dt><dd>{current.source.period}</dd></div>}{current.source.basis && <div><dt>Basis / assumptions</dt><dd>{current.source.basis}</dd></div>}{current.source.raw?.note && <div><dt>Reading this correctly</dt><dd>{current.source.raw.note}</dd></div>}</dl>{current.badge === 'PLAN TEXT' && <p className="plan-passage">{current.source.raw}</p>}</div>}
           <SourceDrawer source={current.source} title={current.title} />
+          {detail && current.projection && <ProjectionChart projection={current.projection} />}
           <form className="deep-dive" onSubmit={askQuestion}><div className="deep-dive-heading"><Sparkles size={17} /><div><h2>Go deeper</h2><p>Ask about this finding. Answers stay linked to the plan.</p></div></div><label className="field-label">Your question<textarea className="editorial-input" rows={2} maxLength={500} value={question} onChange={event => setQuestion(event.target.value)} placeholder="What does this mean for my situation?" /></label><button className="deep-dive-submit" type="submit" disabled={exploring || !question.trim()}>{exploring ? 'Looking at the source…' : 'Explore this finding'} <ArrowRight size={16} /></button>{exploration && <div className="exploration-answer" role="status"><span>{exploration.kind === 'off_topic' ? 'Outside this finding' : exploration.kind === 'unavailable' ? 'Answer unavailable' : 'Based on this plan finding'}</span><p>{exploration.answer}</p>{exploration.kind !== 'off_topic' && <SourceDrawer source={exploration.source} title={current.title} label="Check the source" />}</div>}</form>
-          <div className="understanding-actions"><button disabled={busy} onClick={() => respond('understood')}><Check size={16} /> This makes sense</button><button disabled={busy} onClick={() => respond('discuss')}><MessageCircle size={16} /> Discuss with my advisor</button></div>
+          <div className="understanding-actions"><button disabled={busy} onClick={() => respond('understood')}><Check size={16} /> This makes sense</button><button disabled={busy || surprised.has(current.id)} onClick={() => respond('surprised')}><Sparkles size={16} /> {surprised.has(current.id) ? 'Surprise saved' : 'This surprised me'}</button><button disabled={busy} onClick={() => respond('discuss')}><MessageCircle size={16} /> Discuss with my advisor</button></div>
           {feedback[current.id] && <p className="saved-feedback" role="status">{feedback[current.id]}</p>}{error && <p role="alert" className="inline-error">{error}</p>}
           <div className="scene-actions"><button className="quiet-action" onClick={() => index ? move(index - 1) : setPhase('score')}><ArrowLeft size={17} />Back</button><button className="primary-action" onClick={() => index < findings.length - 1 ? move(index + 1) : onProceedToVerdict()}>{index < findings.length - 1 ? 'Next finding' : 'Bring it together'}<ArrowRight size={18} /></button></div>
         </article>

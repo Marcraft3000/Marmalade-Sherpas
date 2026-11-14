@@ -8,6 +8,7 @@ process.env.TEAM_KEY = 'offline-test';
 const { importPlan, getCaseDetails, getAllCasesOverview } = await import('./casesService.mjs');
 const { AuditEngine } = await import('./auditEngine.mjs');
 const { aiService } = await import('./aiService.mjs');
+const { analyzePlan } = await import('./planInference.mjs');
 
 const fixture = () => ({
   part: 'financial-health',
@@ -35,7 +36,9 @@ test('a new client works through the complete lifecycle without a case-specific 
   assert.match(reveal.discoveries[0].title, /79/);
   assert.ok(reveal.scoreContext);
   assert.deepEqual(reveal.discoveries[0].source.raw, atPointer(fixture(), reveal.discoveries[0].source.path));
-  await engine.handleUnderstandingCheck(s.id, reveal.discoveries[0].id, 'discuss');
+  const finding = reveal.discoveries[0];
+  await engine.handleUnderstandingCheck(s.id, finding.id, 'discuss', 'Which assumption matters most?');
+  await engine.handleUnderstandingCheck(s.id, finding.id, 'surprised');
   await engine.generateVerdict(s.id);
   const mission = await engine.generateMission(s.id);
   assert.equal(mission.title, 'Review retirement saving');
@@ -44,7 +47,50 @@ test('a new client works through the complete lifecycle without a case-specific 
   await engine.handleFollowUp(s.id, { day: 3, status: 'blocked', details: 'Need a statement' });
   assert.equal(s.mission.status, 'blocked');
   const brief = await engine.generateAdvisorBriefing(s.id);
-  assert.ok(brief.advisorAgenda.includes(reveal.discoveries[0].title));
+  assert.deepEqual(brief.discussionFindings, [finding.title]);
+  assert.deepEqual(brief.surprisedBy, [finding.title]);
+  assert.ok(brief.advisorAgenda.includes('Which assumption matters most?'));
+  assert.equal(brief.mission.title, 'Review retirement saving');
+  assert.equal(brief.mission.accepted, true);
+});
+
+test('AI imports an unfamiliar client schema using only reviewed source values and series', async () => {
+  const document = {
+    dossier: { titular: 'New client', puntuacion: 125, saldo: 0, indicacion: 'Revisar el fondo de emergencia.' },
+    proyeccion: [{ anio: 2030, ahorros: 35000 }, { anio: 2031, ahorros: 27500 }, { anio: 2032, ahorros: 0 }],
+  };
+  const original = aiService.callChatCompletion;
+  const mockMode = aiService.mockMode;
+  aiService.mockMode = false;
+  aiService.callChatCompletion = async () => ({ success: true, content: {
+    mapping: { name: '/dossier/titular', score: '/dossier/puntuacion', recommendations: '/dossier/indicacion' },
+    metrics: [{ path: '/dossier/saldo', label: 'Available cash', value: 1_000_000, unit: 'EUR' }, { path: '/invented', label: 'Invented finding' }],
+    projection: { path: '/proyeccion', yearKey: 'anio', valueKey: 'ahorros', title: 'Projected savings', unit: 'EUR' },
+  } });
+  try {
+    const analysis = await analyzePlan(document);
+    assert.equal(analysis.analyzedWithAI, true);
+    assert.equal(analysis.mapping.score, undefined);
+    assert.equal(analysis.suggestedMetrics.length, 1);
+    const plan = normalizePlan(document, { mapping: analysis.mapping, metricMappings: analysis.suggestedMetrics, projectionMapping: analysis.suggestedProjection });
+    assert.equal(plan.meta.name, 'New client');
+    assert.equal(plan.evidence.find(item => item.title === 'Available cash').source.raw, 0);
+    assert.deepEqual(plan.reviewedProjection.points, document.proyeccion.map(row => ({ year: row.anio, value: row.ahorros })));
+  } finally {
+    aiService.mockMode = mockMode;
+    aiService.callChatCompletion = original;
+  }
+});
+
+test('a bundled retirement finding links to its verified report and preserves its yearly data', () => {
+  const plan = getCaseDetails('michael-carter');
+  const finding = plan.evidence.find(item => item.source.path.endsWith('/savingsRunOut'));
+  assert.equal(finding.source.report.page, 5);
+  assert.equal(finding.projection.report.page, 5);
+  assert.equal(finding.projection.title, 'Projected net worth');
+  const original = JSON.parse(fs.readFileSync(new URL('../cases/michael-carter/financial-health.json', import.meta.url)));
+  assert.deepEqual(finding.projection.points, original.projections.yearly.map(row => ({ year: row.year, value: row.net_worth_todays_dollars })));
+  assert.equal(getCaseDetails('samantha-lewis').evidence.some(item => item.source.report), false);
 });
 
 test('each partner retains their own score and edits replace the old value', async () => {

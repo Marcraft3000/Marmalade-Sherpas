@@ -129,11 +129,11 @@ export async function fetchVerdict(sessionId) {
   return data.verdict;
 }
 
-export async function fetchMission(sessionId) {
+export async function fetchMission(sessionId, recommendationId) {
   const res = await auditFetch('/api/audit/mission', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sessionId }),
+    body: JSON.stringify({ sessionId, recommendationId }),
   });
   if (!res.ok) throw new Error('Failed to generate mission');
   const data = await res.json();

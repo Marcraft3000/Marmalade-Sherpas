@@ -32,8 +32,8 @@ From the repository root in PowerShell, create the source ZIP and deploy it usin
 
 ```powershell
 $auditZip = Join-Path ([System.IO.Path]::GetTempPath()) 'plan-audit-azure.zip'
-$samplePlans = Get-ChildItem -Path 'cases/*/financial-health.json' | ForEach-Object { 'cases/' + $_.Directory.Name + '/financial-health.json' }
-tar.exe -a -c -f $auditZip package.json package-lock.json index.html vite.config.js postcss.config.js tailwind.config.js src server $samplePlans
+$sampleFiles = Get-ChildItem -Path 'cases/*/financial-health.json', 'cases/*/report.pdf' | ForEach-Object { 'cases/' + $_.Directory.Name + '/' + $_.Name }
+tar.exe -a -c -f $auditZip package.json package-lock.json index.html vite.config.js postcss.config.js tailwind.config.js src server $sampleFiles
 if ($LASTEXITCODE -ne 0) { throw 'Could not create the deployment ZIP.' }
 
 az login
@@ -44,12 +44,14 @@ Use the default domain shown in the Web App overview. Verify `/api/health` and c
 
 ### Enable the advisor workspace
 
-1. In your Supabase project, apply [the advisor migration](supabase/migrations/202611140001_advisor_portal.sql) once using SQL Editor.
+1. In your Supabase project, apply [the advisor portal migration](supabase/migrations/202611140001_advisor_portal.sql) followed by [the private plans migration](supabase/migrations/202611150001_advisor_plans.sql). Apply each migration once.
 2. In **Authentication → Users**, create and confirm a test advisor. Allow that user into the workspace by running `insert into public.audit_advisors (user_id) values ('<Auth user UUID>');` in SQL Editor.
 3. Add `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` to the Azure Web App environment. For local testing, put these settings in your ignored `.env`. Keep the secret key on the server.
 4. Set `ADVISOR_PORTAL=true` and keep `PUBLIC_DEMO=true` on Azure. The advisor workspace opens at `/` and each invitation opens its audit directly. Links are valid for 30 days. Copy the link when it is created because the database stores its hash.
 
-Use a sample plan and fictional responses when verifying the flow. The advisor workspace accepts the bundled sample plans. Individual plans and secure plan imports can be added through the advisor workspace in a later release.
+Use a sample plan and fictional responses when verifying the flow. The advisor workspace can also import a client's JSON, preview the detected fields and findings, and create an invitation from that plan. Imported plans are scoped to the advisor who uploaded them in Supabase.
+
+For live plan analysis, set `ADVISOR_PLAN_AI=true` alongside `TEAM_KEY` and `LLM_PROXY_URL`. For live responses to questions on valid invitations, set `ADVISOR_QUESTIONS_AI=true`. These settings allow the specified calls while the rest of public demo mode stays mocked. Use synthetic data to test live requests. `MOCK_AI=true` keeps both paths offline.
 
 ## The experience
 
@@ -60,24 +62,24 @@ Use a sample plan and fictional responses when verifying the flow. The advisor w
 5. A high score is contextualized by a retirement depletion finding only when that finding is actually in the plan. No client-name-specific story or age is embedded in the application.
 6. Select a preparation step based on an original plan recommendation, record a barrier and receive a contextual response, then try clearly labelled day 3 and day 30 check-ins. AI can phrase the preparation questions and respond to the client's reported progress; the actions themselves are self-reported.
 
-Questions saved for the advisor are included in the briefing. A rejected action records the barrier; it does not claim to have generated a new financial recommendation.
+The advisor can open an invitation to see what surprised the client, the findings and questions they saved, and the preparation step they accepted. Each sample finding with a verified report reference links to its PDF page. Retirement findings offer a projected net-worth chart when the plan includes a valid annual series.
 
 ## Importing other clients
 
 Use **Import a client plan** on the client list. Upload one client’s JSON export (up to 4.8 MB), review the detected fields, and add the client.
 
 - Standard Sherpas financial-health exports are detected at the root or inside an enclosing object/array. Optional fields may be absent.
-- Other layouts use explicit field mapping for client name, health score, household, summary and recommendations. Field locations use JSON Pointer internally; the selector lists available fields.
+- The import accepts other schema layouts. When configured, AI analyzes a selection of the document's fields and suggests mappings, findings and a chart for an available yearly series. The advisor can review original values, correct field selections and labels, and add findings manually. Field locations use JSON Pointer internally.
 - Scores must be numeric and use a 0–100 scale. Missing scores stay missing, including in the briefing; zero remains zero.
 - Labelled metrics with `label`, `value` (or `min`/`max`), and optional `unit`, `period`, `basis`, and `note` are read directly. Narrative-only plans can be explored through their mapped text.
-- Unknown field semantics are **not** guessed. An export with differently structured unlabelled metrics needs an adapter or the relevant text mapped before those metrics can become findings. No application can reliably infer the meaning of an arbitrary JSON value solely from its position.
+- If a document omits context for a value, confirm its meaning with the source before including it in the audit. Each finding retains its original value and location in the uploaded JSON.
 - One client per import: multiple recognized financial-health plans in the same file produce an explicit error. Unsupported shapes and invalid mappings also produce actionable errors.
 - Generic household arrays use `first_name` or `name`, and explicit roles `client`, `spouse`, `partner`, `co-client` or `coclient`. Children are not treated as partners; missing roles do not create a fictitious second perspective.
 - The original source location and value are retained for each finding. Imports persist under `data/imports/`; sessions persist under `data/sessions/`. Both are excluded from git.
 
-Sample plans remain under `cases/<client-id>/financial-health.json`. The runtime does not contain a lookup table of family names or canned per-family findings. `server/planAdapter.mjs` owns schema interpretation, `server/casesService.mjs` owns storage, and `server/auditEngine.mjs` owns the flow.
+Sherpas provided the original files under `cases/` as examples of its current system. Keep them intact. Sample PDF references live under `server/report-sources/`. `server/planInference.mjs` suggests fields with AI, `server/planAdapter.mjs` validates data, and `server/auditEngine.mjs` owns the flow.
 
-This is a local/demo app. The server’s client list is shared and has no authentication or tenant isolation. Add those controls before making real client plans available in a shared deployment.
+The standalone client list is available for local testing. Use the signed-in advisor workspace when sharing an audit link based on an imported JSON.
 
 ## Evidence and AI
 
