@@ -1,0 +1,19 @@
+{
+  "/narrative/summary_main": { "page": 4, "section": "Summary" },
+  "/narrative/summary_recommendations": { "page": 4, "section": "Recommendations" },
+  "/key_metrics/facts/cash/accessibleCash": { "page": 9, "section": "Debt management", "excerpt": "You hold $150,800 in accessible cash" },
+  "/key_metrics/facts/cash/monthsCovered": { "page": 4, "section": "Summary", "excerpt": "$150,800 covers about 16 months of essentials" },
+  "/key_metrics/facts/cash/emergencyReserve": { "page": 9, "section": "Debt management" },
+  "/key_metrics/facts/cash/cashAboveTotalNeeded": { "page": 9, "section": "Debt management", "excerpt": "$60,222.50 sits above the reserve and near-term goals." },
+  "/key_metrics/facts/cash/monthsCoveredAfterNearTermGoals": { "page": 11, "section": "Emergency fund", "excerpt": "still covers about 15.4 months after your $6,000 vacation payment." },
+  "/key_metrics/facts/cash/nearTermGoals/0": { "page": 5, "section": "Retirement & Goals", "excerpt": "Going on a $6,000 vacation every year." },
+  "/key_metrics/facts/education/fundingGap": { "page": 12, "section": "Life insurance", "excerpt": "you still need $113,509 for college beyond current 529 balances." },
+  "/key_metrics/facts/retirement/spendingGap": { "page": 5, "section": "Retirement & Goals", "excerpt": "Your savings are projected to cover only about $12,852.82 per year of spending on average" },
+  "/key_metrics/facts/retirement/spendingNeed": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/incomeShareOfNeed": { "page": 5, "section": "Retirement & Goals", "excerpt": "income is projected to cover 93% of the $184,303.51 you would need" },
+  "/key_metrics/facts/retirement/savingsLeftAtPlanEnd": { "page": 5, "section": "Retirement & Goals", "excerpt": "Savings and investments of $2,371,900.89 (today's dollars) are projected to remain at the end" },
+  "/key_metrics/facts/retirement/withdrawalRateAverage": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/netCashFlowThisYear": { "page": 10, "section": "Savings & Expenses", "excerpt": "Your cash flow shows $36,960.75 a year left over (13.7%), but this figure is low confidence and spending may be understated." },
+  "/score/top_moves/2": { "page": 13, "section": "Umbrella insurance" },
+  "/projections/yearly": { "page": 5, "section": "Your net worth projection" }
+}

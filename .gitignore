@@ -16,3 +16,9 @@ build/
 .DS_Store
 .idea/
 .vscode/
+
+# Plan Audit runtime data
+*.log
+data/
+test-results/
+playwright-report/

@@ -1,0 +1,20 @@
+{
+  "/narrative/summary_main": { "page": 4, "section": "Summary" },
+  "/narrative/summary_recommendations": { "page": 4, "section": "Recommendations" },
+  "/key_metrics/facts/cash/accessibleCash": { "page": 10, "section": "Emergency fund", "excerpt": "Your accessible cash of $19,000 covers about 1.4 months of essential expenses" },
+  "/key_metrics/facts/cash/monthsCovered": { "page": 10, "section": "Emergency fund", "excerpt": "Your accessible cash of $19,000 covers about 1.4 months of essential expenses" },
+  "/key_metrics/facts/cash/emergencyReserve": { "page": 10, "section": "Emergency fund" },
+  "/key_metrics/facts/cash/monthsCoveredAfterNearTermGoals": { "page": 10, "section": "Emergency fund", "excerpt": "payment is set aside, and cover then drops to 1.1 months." },
+  "/key_metrics/facts/cash/nearTermGoals/0": { "page": 5, "section": "Retirement & Goals", "excerpt": "Going on a $4,500 vacation every year." },
+  "/key_metrics/facts/education/fundingGap": { "page": 4, "section": "Summary", "excerpt": "a $106,552 college funding gap remains." },
+  "/key_metrics/facts/education/totalCostAllGoals": { "page": 11, "section": "Life insurance", "excerpt": "College costs of $120,000 for Oliver and Sophia are also ahead" },
+  "/key_metrics/facts/retirement/spendingGap": { "page": 5, "section": "Retirement & Goals", "excerpt": "The rest, about $62,932 a year on average, would come from savings" },
+  "/key_metrics/facts/retirement/spendingNeed": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/incomeShareOfNeed": { "page": 5, "section": "Retirement & Goals", "excerpt": "Income is projected to cover 49% of your $124,071 yearly retirement spending need" },
+  "/key_metrics/facts/retirement/averagePortfolioDraw": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/savingsLeftAtPlanEnd": { "page": 4, "section": "Summary", "excerpt": "about $260,272 left at the end." },
+  "/key_metrics/facts/retirement/withdrawalRateAverage": { "page": 5, "section": "Retirement & Goals" },
+  "/key_metrics/facts/retirement/netCashFlowThisYear": { "page": 8, "section": "Debt management", "excerpt": "Your annual cash flow is $15,032" },
+  "/score/top_moves/1": { "page": 12, "section": "Umbrella insurance" },
+  "/projections/yearly": { "page": 5, "section": "Your net worth projection" }
+}

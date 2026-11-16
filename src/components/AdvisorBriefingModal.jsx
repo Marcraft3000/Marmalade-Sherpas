@@ -1,0 +1,14 @@
+import React, { useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Copy, Check, X } from 'lucide-react';
+export default function AdvisorBriefingModal({ isOpen, onClose, briefing }) {
+  const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
+  const score = briefing?.verifiedScore == null ? 'Not supplied' : `${briefing.verifiedScore}/100`;
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(briefing, null, 2)); setCopied(true); setError('');
+    } catch { setError('Copy is unavailable here. You can select the briefing text directly.'); }
+  }
+  return <Dialog.Root open={isOpen && Boolean(briefing)} onOpenChange={open => { if (!open) { onClose(); setCopied(false); } }}><Dialog.Portal><Dialog.Overlay className="sheet-overlay" /><Dialog.Content className="source-sheet"><div className="sheet-top"><span className="eyebrow">Ready for a conversation</span><Dialog.Close asChild><button className="icon-button" aria-label="Close briefing"><X /></button></Dialog.Close></div><Dialog.Title className="sheet-title">{briefing?.clientName}</Dialog.Title><Dialog.Description className="sheet-description">Plan information, the client’s own words and questions to discuss. Reported actions have not been independently verified.</Dialog.Description><dl className="source-fields"><div><dt>Plan score</dt><dd>{score}</dd></div><div><dt>Client’s estimate</dt><dd>{briefing?.expectedScore ?? 'Not supplied'} / 100</dd></div></dl>{[{ title: 'From the plan', items: briefing?.facts }, { title: 'In the client’s own words', items: briefing?.userStatements }, { title: 'Context to discuss', items: briefing?.misconceptionsAndGaps }, { title: 'Questions for the advisor', items: briefing?.advisorAgenda }].map(section => <section className="briefing-section" key={section.title}><h2>{section.title}</h2><ul>{section.items?.map((item, index) => <li key={index}>{item}</li>)}</ul></section>)}{briefing?.exploredQuestions?.length > 0 && <section className="briefing-section"><h2>Questions explored</h2><ul>{briefing.exploredQuestions.map((item, index) => <li key={index}>{item.question} — {item.finding} ({item.source})</li>)}</ul></section>}{briefing?.followUp?.length > 0 && <section className="briefing-section"><h2>Self-reported check-ins</h2><ul>{briefing.followUp.map((item, index) => <li key={index}>Day {item.day}: {item.status}{item.note ? ` — ${item.note}` : ''}</li>)}</ul></section>}<section className="briefing-section"><h2>The saved next step</h2><p>{briefing?.acceptedMission}</p><p>Status: {briefing?.missionStatus}</p></section><button className="primary-action" onClick={copy}>{copied ? <Check size={17} /> : <Copy size={17} />}{copied ? 'Copied' : 'Copy briefing'}</button>{error && <p role="alert" className="inline-error">{error}</p>}</Dialog.Content></Dialog.Portal></Dialog.Root>;
+}
