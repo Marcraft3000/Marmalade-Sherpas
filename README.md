@@ -38,7 +38,7 @@ Then the client chooses what to explore. For example, **“How much would I need
 | **4 · Choose a first step** | A preparation task comes from an existing plan recommendation. The client can name a barrier and try simulated day 3 and day 30 check-ins. |
 | **5 · Brief the advisor** | The advisor sees the client’s expectations, saved questions, surprises and chosen first step before their meeting. |
 
-Findings can be read aloud in the browser. Where a source has a verified PDF reference, the client can open the relevant report page. A chart is available when the plan includes a valid yearly projection series.
+Every stage has a Listen control. Turn on **Voice** in the header to hear each scene and question as you move through the audit. The Reveal, findings and next-step recommendation have longer narration drawn from the plan and the client’s answers. Voice uses the browser’s speech synthesis and does not consume Sherpas proxy credits. Where a source has a verified PDF reference, the client can open the relevant report page. A chart is available when the plan includes a valid yearly projection series.
 
 ## From an uploaded JSON to an invitation
 

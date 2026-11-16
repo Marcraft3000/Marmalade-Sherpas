@@ -28,7 +28,6 @@ import {
   openInvitation,
 } from './utils/api';
 import { chooseRoute } from './utils/api';
-import { speechService } from './utils/speech';
 
 export default function App() {
   const [cases, setCases] = useState([]);
@@ -46,8 +45,7 @@ export default function App() {
   const [missionData, setMissionData] = useState(null);
   const [briefingData, setBriefingData] = useState(null);
 
-  // Audio & Modals
-  const [isMuted, setIsMuted] = useState(false);
+  // Modals
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [mockMode, setMockMode] = useState(true);
@@ -103,18 +101,11 @@ export default function App() {
     init();
   }, []);
 
-  const handleToggleMute = () => {
-    const next = !isMuted;
-    setIsMuted(next);
-    speechService.setMuted(next);
-  };
-
   // 1. Select Case & Initialize Session
   const handleSelectCase = async (caseId, coupleMode) => {
     setLoading(true);
     setError('');
     try {
-      speechService.stop();
       const newSession = await createSession(caseId, coupleMode);
       setSession(newSession);
       localStorage.setItem('the_plan_audit_session_id', newSession.id);
@@ -235,7 +226,6 @@ export default function App() {
     if (!session || !missionData) return;
     setSession(prev => ({ ...prev, simulatedDay: 30 }));
     switchStage('followup');
-    speechService.speak("Fast forwarding simulated timeline 30 days for jury demonstration.", null, null);
   };
 
   // Advisor Briefing
@@ -254,7 +244,6 @@ export default function App() {
   // Reset Audit to start over
   const handleResetSession = () => {
     setError('');
-    speechService.stop();
     localStorage.removeItem('the_plan_audit_session_id');
     setSession(null);
     switchStage('case_selection');
@@ -271,8 +260,6 @@ export default function App() {
       <Header
         session={session}
         stage={stage}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
         onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
         onOpenCostMonitor={() => setIsCostModalOpen(true)}
         onTimeTravel={handleTimeTravel}
@@ -306,7 +293,6 @@ export default function App() {
                 caseData={cases.find(c => c.id === session.caseId)}
                 onCompleteInterrogation={handleCompleteInterrogation}
                 onSaveAnswer={invitationPath ? answer => submitInterrogationAnswer(session.id, answer) : undefined}
-                isMuted={isMuted}
               />
             )}
 
@@ -325,7 +311,6 @@ export default function App() {
                 session={session}
                 onProceedToVerdict={handleProceedToVerdict}
                 onChooseRoute={handleChooseRoute}
-                isMuted={isMuted}
               />
             )}
 

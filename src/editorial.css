@@ -83,8 +83,14 @@
 .route-chooser button strong { margin: 9px 0; font-size: 13px; font-weight: 500; line-height: 1.4; }
 .route-chooser button svg { margin-top: auto; color: #cde3b8; }
 .reflection-question { color: #cbdcba; font-family: 'Newsreader', Georgia, serif; font-size: clamp(21px, 2.5vw, 29px); line-height: 1.3; margin: -8px 0 18px; }
-.voice-action { display: inline-flex; align-items: center; gap: 8px; min-height: 40px; color: #a9c7ae; font-size: 11px; margin-bottom: 12px; }
-.voice-action:hover { color: white; text-decoration: underline; text-underline-offset: 4px; }
+.voice-action { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: var(--green); font-size: 12px; font-weight: 500; }
+.voice-action:hover { text-decoration: underline; text-underline-offset: 4px; }
+.app-reveal .voice-action { color: #c4e1cb; }
+.narration-control { margin-bottom: 10px; }
+.narration-error { color: var(--muted); font-size: 12px; margin: 0 0 8px; }
+.narration-toggle { border: 1px solid var(--line); border-radius: 4px; padding: 0 8px; white-space: nowrap; }
+.narration-toggle[aria-pressed='true'] { color: var(--green); }
+.app-reveal .narration-toggle[aria-pressed='true'] { color: #c4e1cb; }
 .deep-dive { margin: 32px 0 8px; padding: 26px; border: 1px solid #b9d5b955; background: linear-gradient(135deg, #2049359e, #071b18a0); }
 .deep-dive-heading { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 22px; color: #d6eac7; }
 .deep-dive-heading h2 { font-size: 27px; line-height: 1; }

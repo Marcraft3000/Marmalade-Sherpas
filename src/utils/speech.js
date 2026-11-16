@@ -1,13 +1,23 @@
-/**
- * Web Speech API Utility for THE PLAN AUDIT
- * Completely free, runs locally in the browser, 0 API tokens spent!
- */
+function speechChunks(text) {
+  const words = text.replace(/[\*_#`~]/g, '').trim().match(/\S+/g) || [];
+  const chunks = [];
+  let current = '';
+  for (const word of words) {
+    if (current && (current.length + word.length > 180 || /[.!?…][”"]?$/.test(current))) {
+      chunks.push(current);
+      current = '';
+    }
+    current = current ? `${current} ${word}` : word;
+  }
+  if (current) chunks.push(current);
+  return chunks;
+}
 
 class SpeechService {
   constructor() {
     this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
-    this.isMuted = false;
-    this.isSpeaking = false;
+    this.run = 0;
+    this.utterance = null;
     this.recognition = null;
     this.isListening = false;
     this.selectedVoice = null;
@@ -23,19 +33,22 @@ class SpeechService {
 
       // Initialize voices when available
       if (this.synth) {
-        if (this.synth.onvoiceschanged !== undefined) {
-          this.synth.onvoiceschanged = () => this.loadVoices();
-        }
+        this.synth.addEventListener?.('voiceschanged', () => this.loadVoices());
         this.loadVoices();
       }
     }
+  }
+
+  get available() {
+    return Boolean(this.synth && typeof window.SpeechSynthesisUtterance === 'function');
   }
 
   loadVoices() {
     if (!this.synth) return;
     const voices = this.synth.getVoices();
     // Prioritize natural sounding American English voices
-    const preferred = voices.find(v =>
+    const english = voices.filter(voice => voice.lang.startsWith('en'));
+    const preferred = english.find(voice => voice.localService && voice.lang === 'en-US') || english.find(voice => voice.localService) || voices.find(v =>
       v.lang.startsWith('en') && (
         v.name.includes('Natural') ||
         v.name.includes('Google US English') ||
@@ -43,62 +56,43 @@ class SpeechService {
         v.name.includes('Guy') ||
         v.name.includes('Alex')
       )
-    ) || voices.find(v => v.lang.startsWith('en'));
-    this.selectedVoice = preferred || voices[0] || null;
+    ) || english[0];
+    this.selectedVoice = preferred || null;
   }
 
-  setMuted(muted) {
-    this.isMuted = muted;
-    if (muted && this.synth) {
-      this.synth.cancel();
-      this.isSpeaking = false;
-    }
-  }
-
-  speak(text, onStart, onEnd) {
-    if (!this.synth || this.isMuted || !text) return;
-
-    this.synth.cancel(); // Stop any pending speech
-    this.isSpeaking = true;
-
-    // Clean text: strip markdown bold/italics/brackets
-    const cleanText = text
-      .replace(/[*_#`~]/g, '')
-      .replace(/\[.*?\]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    if (this.selectedVoice) {
-      utterance.voice = this.selectedVoice;
-    }
-    utterance.rate = 1.05; // Slightly brisk, Caleb Hammer pace
-    utterance.pitch = 0.95; // Direct, authoritative tone
-
-    utterance.onstart = () => {
-      this.isSpeaking = true;
-      if (onStart) onStart();
+  speak(text, onDone) {
+    this.stop();
+    const run = this.run;
+    const chunks = speechChunks(text);
+    const finish = error => {
+      if (this.run !== run) return;
+      this.utterance = null;
+      onDone(error);
     };
-
-    utterance.onend = () => {
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
+    const speakNext = index => {
+      if (this.run !== run) return;
+      if (index === chunks.length) return finish();
+      try {
+        const utterance = new window.SpeechSynthesisUtterance(chunks[index]);
+        utterance.lang = this.selectedVoice?.lang || 'en-US';
+        if (this.selectedVoice) utterance.voice = this.selectedVoice;
+        utterance.rate = 1;
+        utterance.onend = () => speakNext(index + 1);
+        utterance.onerror = event => finish(event.error || 'playback failed');
+        this.utterance = utterance;
+        this.synth.speak(utterance);
+      } catch (error) {
+        finish(error);
+      }
     };
-
-    utterance.onerror = (e) => {
-      console.warn('Speech synthesis error:', e);
-      this.isSpeaking = false;
-      if (onEnd) onEnd();
-    };
-
-    this.synth.speak(utterance);
+    if (this.available) speakNext(0);
+    else finish('speech unavailable');
   }
 
   stop() {
-    if (this.synth) {
-      this.synth.cancel();
-      this.isSpeaking = false;
-    }
+    this.run += 1;
+    this.utterance = null;
+    this.synth?.cancel();
   }
 
   startListening(onResult, onError) {
