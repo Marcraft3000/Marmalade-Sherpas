@@ -271,7 +271,11 @@ test('a model can select supplied passages but cannot insert an unsupported guar
     assert.equal(supported.answer, 'The plan projects when savings would run out, based on its stated assumptions.');
     const direct = await engine.exploreDiscovery(session.id, finding.id, 'Yearly retirement spending need (excluding estimated long-term care');
     assert.equal(direct.kind, 'answered');
-    assert.match(direct.answer, /^The plan lists /);
+    assert.match(direct.answer, /^Your plan lists /);
+    aiService.callChatCompletion = async () => ({ success: true, content: { sourceId: finding.id, answer: 'We need to plan for this in our retirement.' } });
+    const familyVoice = await engine.exploreDiscovery(session.id, finding.id, 'What does this mean for my retirement?');
+    assert.equal(familyVoice.kind, 'answered');
+    assert.doesNotMatch(familyVoice.answer, /(we|our)/i);
   } finally {
     aiService.callChatCompletion = original;
   }
