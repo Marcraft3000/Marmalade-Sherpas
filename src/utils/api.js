@@ -3,12 +3,21 @@
  */
 
 export const invitationPath = window.location.pathname.startsWith('/audit/');
-const inviteToken = /^\/audit\/([A-Za-z0-9_-]{43})\/?$/.exec(window.location.pathname)?.[1];
+const inviteToken = /^\/audit\/((?:[a-f0-9-]{36}\.)?[A-Za-z0-9_-]{43})\/?$/i.exec(window.location.pathname)?.[1];
 
 function auditFetch(url, options = {}) {
   const headers = new Headers(options.headers);
   if (inviteToken) headers.set('X-Audit-Invite', inviteToken);
   return fetch(url, { ...options, headers });
+}
+
+export async function fetchNarration(sessionId, findingId, signal) {
+  if (!inviteToken) return null;
+  const res = await auditFetch('/api/audit/speech', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sessionId, findingId }), signal,
+  });
+  return res.ok ? res.blob() : null;
 }
 
 export async function openInvitation() {
@@ -21,6 +30,7 @@ export async function openInvitation() {
 export async function advisorRequest(path, options = {}) {
   const res = await fetch('/api/advisor' + path, {
     method: options.method || 'GET',
+    signal: options.signal,
     headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
     body: options.body ? JSON.stringify(options.body) : undefined,
   });

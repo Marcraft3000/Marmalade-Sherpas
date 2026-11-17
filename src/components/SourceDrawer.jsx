@@ -17,6 +17,7 @@ function displayValue(raw) {
   const value = raw.value ?? (raw.min != null && raw.max != null ? `${raw.min}–${raw.max}` : null);
   if (value == null) return null;
   if (typeof value === 'number') {
+    if (raw.unit === 'decimal-rate') return new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 4 }).format(value);
     const formatted = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 }).format(value);
     if (raw.unit === 'USD') return `$${formatted}`;
     if (raw.unit === 'USD/yr') return `$${formatted} per year`;
@@ -51,8 +52,7 @@ export default function SourceDrawer({ source, title = 'Original source', label 
           {metric.action && <p className="source-passage">{metric.action}</p>}
           {metric.period && <div><span>Time period</span><p>{metric.period}</p></div>}
           {metric.basis && <div><span>How to read it</span><p>{metric.basis}</p></div>}
-          {metric.note && <div><span>Additional context</span><p>{metric.note}</p></div>}
-          {!value && !metric.action && !metric.period && !metric.basis && !metric.note && <p>Ask your advisor to walk through this figure with you.</p>}
+          {!value && !metric.action && !metric.period && !metric.basis && <p>Ask your advisor to walk through this figure with you.</p>}
         </div> : <blockquote className="source-passage">{source.unit
           ? displayValue({ value: raw, unit: source.unit })
           : typeof raw === 'number' && /score/i.test(title) ? `${raw} / 100` : String(raw ?? 'Not supplied')}</blockquote>}

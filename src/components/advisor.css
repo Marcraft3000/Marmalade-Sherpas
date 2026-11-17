@@ -28,6 +28,8 @@
 .advisor-checkbox { margin-top: 14px; font-size: 13px; }
 .advisor-section-head { justify-content: space-between; gap: 16px; }
 .advisor-account span { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
+.advisor-bell { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; }
+.advisor-bell b { display: grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; border-radius: 12px; background: #04724d; color: white; font-size: 11px; }
 .advisor-link { border-top: 1px solid var(--line); margin-top: 24px; padding-bottom: 5px; }
 .advisor-link p, .advisor-empty { color: var(--muted); font-size: 13px; line-height: 1.6; }
 .advisor-empty { margin-top: 16px; }
@@ -39,7 +41,9 @@
 .advisor-status { flex-shrink: 0; border-radius: 20px; background: #eceee6; padding: 5px 10px; font-size: 11px; }
 .advisor-status[data-status="in_progress"] { background: #f1e7d4; color: #6c4b12; }
 .advisor-status[data-status="answered"] { background: #e0ebdf; color: #205239; }
+.advisor-unread { display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 50%; background: #04724d; vertical-align: 1px; }
 .advisor-answers { padding: 0 0 16px; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; }
+.advisor-answers .advisor-link { margin: 0 0 16px; padding-bottom: 12px; border-top: 0; border-bottom: 1px solid var(--line); }
 .advisor-answers dl > div { padding: 12px 14px; background: #f0f2e9; border-bottom: 1px solid #f9faf5; }
 .advisor-answers dt { font-size: 12px; color: #51655a; }
 .advisor-answers dd { white-space: pre-wrap; }

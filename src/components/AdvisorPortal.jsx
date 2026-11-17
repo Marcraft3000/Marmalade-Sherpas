@@ -1,11 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Clipboard, Link2, LogOut, RefreshCw } from 'lucide-react';
+import { ArrowRight, Bell, Clipboard, Link2, LogOut, RefreshCw } from 'lucide-react';
 import { advisorRequest } from '../utils/api';
 import PlanImport from './PlanImport';
 import './advisor.css';
 
-const statuses = { pending: 'Pending', in_progress: 'In progress', answered: 'Answered' };
+const statuses = { pending: 'Pending', in_progress: 'In progress', answered: 'Survey complete' };
 const dateFormat = new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+const seenStorageKey = 'plan-audit-surveys-seen';
+
+function InviteLink({ value, expiresAt, copied, onCopy }) {
+  if (!value) return <p className="advisor-empty">This invitation has expired. Create a new invitation to send another link.</p>;
+  return <div className="advisor-link">
+    <label className="field-label">Invitation link<input className="editorial-input" value={value} readOnly onFocus={event => event.target.select()} /></label>
+    <button className="quiet-action" onClick={() => onCopy(value)}><Clipboard size={16} /> Copy link</button>
+    <p role="status">{copied ? 'Link copied.' : `Expires ${dateFormat.format(new Date(expiresAt))}.`}</p>
+  </div>;
+}
 
 function MeetingBrief({ briefing }) {
   const score = value => value == null ? 'Unavailable' : `${value} / 100`;
@@ -47,25 +57,31 @@ export default function AdvisorPortal() {
   const [workspace, setWorkspace] = useState(null);
   const [planId, setPlanId] = useState('');
   const [coupleMode, setCoupleMode] = useState(true);
-  const [link, setLink] = useState('');
-  const [copied, setCopied] = useState(false);
+  const [link, setLink] = useState(null);
+  const [copiedLink, setCopiedLink] = useState('');
+  const [seen, setSeen] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(seenStorageKey)) || {}; } catch { return {}; }
+  });
   const [detail, setDetail] = useState(null);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState('');
   const [password, setPassword] = useState('');
   const plan = workspace?.plans.find(item => item.id === planId);
+  const isUnread = item => Boolean(item.completedAt && seen[item.id] !== item.completedAt);
+  const unreadCount = workspace?.invitations.filter(isUnread).length || 0;
 
   function handleError(err) {
     if (err.status === 401 || err.status === 403) {
       setWorkspace(null);
-      setLink('');
+      setLink(null);
       setDetail(null);
     }
     setError(err.message);
   }
 
-  async function loadWorkspace() {
-    const result = await advisorRequest('/workspace');
+  async function loadWorkspace(signal) {
+    const result = await advisorRequest('/workspace', { signal });
+    if (signal?.aborted) return;
     setWorkspace(result);
     setPlanId(previous => result.plans.some(item => item.id === previous) ? previous : result.plans[0]?.id || '');
   }
@@ -75,6 +91,36 @@ export default function AdvisorPortal() {
       if (err.status !== 401) handleError(err);
     }).finally(() => setBusy(false));
   }, []);
+
+  const signedIn = Boolean(workspace);
+  useEffect(() => {
+    if (!signedIn) return;
+    const request = new AbortController();
+    const refresh = () => {
+      if (document.visibilityState !== 'visible') return;
+      loadWorkspace(request.signal).catch(err => {
+        if (err.status === 401 || err.status === 403) handleError(err);
+      });
+    };
+    const interval = window.setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      request.abort();
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [signedIn]);
+
+  useEffect(() => {
+    try { localStorage.setItem(seenStorageKey, JSON.stringify(seen)); } catch {}
+  }, [seen]);
+
+  async function openDetail(id) {
+    const next = await advisorRequest(`/invitations/${id}`);
+    setDetail(next);
+    setWorkspace(previous => previous && ({ ...previous, invitations: previous.invitations.map(item => item.id === id ? next.invitation : item) }));
+    if (next.invitation.completedAt) setSeen(previous => ({ ...previous, [id]: next.invitation.completedAt }));
+  }
 
   async function run(action) {
     setError('');
@@ -108,16 +154,16 @@ export default function AdvisorPortal() {
         method: 'POST',
         body: { caseId: planId, coupleMode: Boolean(plan?.coupleMode && coupleMode) },
       });
-      setLink(new URL(path, window.location.origin).href);
-      setCopied(false);
+      setLink({ value: new URL(path, window.location.origin).href, expiresAt: invitation.expiresAt });
+      setCopiedLink('');
       setWorkspace(previous => ({ ...previous, invitations: [invitation, ...previous.invitations] }));
     });
   }
 
-  async function copyLink() {
+  async function copyLink(value) {
     try {
-      await navigator.clipboard.writeText(link);
-      setCopied(true);
+      await navigator.clipboard.writeText(value);
+      setCopiedLink(value);
     } catch {
       setError('Select the invitation link and copy it manually.');
     }
@@ -129,10 +175,13 @@ export default function AdvisorPortal() {
         <div className="brand"><span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>The Plan Audit</div>
         {workspace && <div className="advisor-account">
           <span>{workspace.email}</span>
+          <a href="#advisor-invitations" className="quiet-action advisor-bell" aria-label={`${unreadCount} new completed surveys`}>
+            <Bell size={18} aria-hidden="true" />{unreadCount > 0 && <b aria-hidden="true">{unreadCount}</b>}
+          </a>
           <button className="quiet-action" disabled={busy} onClick={() => run(async () => {
             await advisorRequest('/logout', { method: 'POST' });
             setWorkspace(null);
-            setLink('');
+            setLink(null);
             setDetail(null);
           })}><LogOut size={16} /> Sign out</button>
         </div>}
@@ -156,7 +205,7 @@ export default function AdvisorPortal() {
                   <select className="editorial-input" value={planId} onChange={event => {
                     setPlanId(event.target.value);
                     setCoupleMode(true);
-                    setLink('');
+                    setLink(null);
                   }}>
                     {workspace.plans.map(item => <option key={item.id} value={item.id}>{item.name}{item.imported ? '' : ' (sample)'}</option>)}
                   </select>
@@ -167,33 +216,31 @@ export default function AdvisorPortal() {
               <PlanImport privateAdvisor onImported={item => {
                 setWorkspace(previous => ({ ...previous, plans: [item, ...previous.plans] }));
                 setPlanId(item.id);
-                setLink('');
+                setLink(null);
                 setCoupleMode(true);
               }} />
-              {link && <div className="advisor-link">
-                <label className="field-label">Invitation link<input className="editorial-input" value={link} readOnly onFocus={event => event.target.select()} /></label>
-                <button className="quiet-action" onClick={copyLink}><Clipboard size={16} /> Copy link</button>
-                <p role="status">{copied ? 'Link copied.' : 'Copy the link to send it to your client. It expires in 30 days.'}</p>
-              </div>}
+              {link && <InviteLink {...link} copied={copiedLink === link.value} onCopy={copyLink} />}
             </section>
-            <section className="advisor-panel">
+            <section className="advisor-panel" id="advisor-invitations">
               <div className="advisor-section-head">
                 <h2>Invitations</h2>
                 <button className="quiet-action" disabled={busy} onClick={() => run(async () => {
                   await loadWorkspace();
-                  if (detail) setDetail(await advisorRequest(`/invitations/${detail.invitation.id}`));
+                  if (detail) await openDetail(detail.invitation.id);
                 })}><RefreshCw size={16} /> Refresh</button>
               </div>
               {!workspace.invitations.length && <p className="advisor-empty">Create an invitation to start collecting responses.</p>}
               <ul className="advisor-invitations">
                 {workspace.invitations.map(item => <li key={item.id}>
                   <button disabled={busy} className="advisor-invitation" aria-expanded={detail?.invitation.id === item.id} onClick={() => run(async () => {
-                    setDetail(detail?.invitation.id === item.id ? null : await advisorRequest(`/invitations/${item.id}`));
+                    if (detail?.invitation.id === item.id) setDetail(null);
+                    else await openDetail(item.id);
                   })}>
                     <span><strong>{item.planName}</strong><small>{dateFormat.format(new Date(item.createdAt))}</small></span>
-                    <span className="advisor-status" data-status={item.status}>{statuses[item.status]}</span>
+                    <span className="advisor-status" data-status={item.status}>{isUnread(item) && <><span className="advisor-unread" aria-hidden="true" /><span className="sr-only">New. </span></>}{statuses[item.status]}</span>
                   </button>
                   {detail?.invitation.id === item.id && <div className="advisor-answers">
+                    <InviteLink value={detail.path ? new URL(detail.path, window.location.origin).href : null} expiresAt={detail.invitation.expiresAt} copied={copiedLink === (detail.path && new URL(detail.path, window.location.origin).href)} onCopy={copyLink} />
                     {detail.briefing && <MeetingBrief briefing={detail.briefing} />}
                     {!detail.answers.length ? <p>No responses yet.</p> : <dl>
                       {detail.answers.map(answer => <div key={`${answer.category}-${answer.partner || ''}`}>

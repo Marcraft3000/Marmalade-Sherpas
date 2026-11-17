@@ -30,6 +30,8 @@ import {
 import { chooseRoute } from './utils/api';
 import { speechService } from './utils/speech';
 
+const reviewStages = ['verdict', 'mission', 'followup'];
+
 export default function App() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +39,7 @@ export default function App() {
   const [transitioning, setTransitioning] = useState(false);
   const [session, setSession] = useState(null);
   const [stage, setStage] = useState('case_selection');
-  const [caseDetails, setCaseDetails] = useState(null);
+  const [returnStage, setReturnStage] = useState(null);
 
   // Stage-specific data
   const [interrogationSummary, setInterrogationSummary] = useState(null);
@@ -82,7 +84,10 @@ export default function App() {
             const restored = invitationPath ? initial : await fetchSession(savedSessionId);
             if (restored?.version === 2) {
               setSession(restored);
-              setStage(restored.currentStage || 'interrogation');
+              const reviewingFrom = sessionStorage.getItem(`audit-review-${restored.id}`);
+              const reviewStage = restored.reveal && reviewStages.includes(reviewingFrom) ? reviewingFrom : null;
+              setReturnStage(reviewStage);
+              setStage(reviewStage ? 'reveal' : restored.currentStage || 'interrogation');
               if (restored.summary) setInterrogationSummary(restored.summary);
               if (restored.reveal) setRevealData(restored.reveal);
               if (restored.verdict) setVerdictData(restored.verdict);
@@ -135,6 +140,10 @@ export default function App() {
         for (const ans of answers) await submitInterrogationAnswer(session.id, ans);
       }
       const summary = await fetchSummary(session.id, invitationPath ? answers.at(-1) : undefined);
+      localStorage.removeItem(`audit-reveal-${session.id}`);
+      setRevealData(null);
+      setVerdictData(null);
+      setMissionData(null);
       setInterrogationSummary(summary);
       setSession(await fetchSession(session.id));
       switchStage('summary');
@@ -163,6 +172,12 @@ export default function App() {
 
   // 4. Proceed to Verdict
   const handleProceedToVerdict = async () => {
+    if (returnStage) {
+      sessionStorage.removeItem(`audit-review-${session.id}`);
+      setReturnStage(null);
+      switchStage(returnStage);
+      return;
+    }
     if (transitioning) return;
     setTransitioning(true);
     try {
@@ -172,6 +187,24 @@ export default function App() {
     } catch (err) {
       setError('We could not prepare the recap. Please try again.');
       console.error('Failed to generate verdict:', err);
+    } finally {
+      setTransitioning(false);
+    }
+  };
+
+  const handleReturnToFindings = async () => {
+    if (transitioning || !session) return;
+    setError('');
+    setTransitioning(true);
+    try {
+      const latest = await fetchSession(session.id);
+      setSession(latest);
+      setRevealData(latest.reveal);
+      sessionStorage.setItem(`audit-review-${session.id}`, stage);
+      setReturnStage(stage);
+      switchStage('reveal');
+    } catch {
+      setError('We could not reopen the plan. Please try again.');
     } finally {
       setTransitioning(false);
     }
@@ -255,6 +288,11 @@ export default function App() {
   const handleResetSession = () => {
     setError('');
     speechService.stop();
+    if (session) {
+      sessionStorage.removeItem(`audit-review-${session.id}`);
+      localStorage.removeItem(`audit-reveal-${session.id}`);
+    }
+    setReturnStage(null);
     localStorage.removeItem('the_plan_audit_session_id');
     setSession(null);
     switchStage('case_selection');
@@ -281,6 +319,7 @@ export default function App() {
         showCostMonitor={import.meta.env.DEV && !invitationPath}
         canTimeTravel={Boolean(missionData)}
         canOpenBriefing={!invitationPath && Boolean(revealData)}
+        onReturnToFindings={reviewStages.includes(stage) && revealData ? handleReturnToFindings : undefined}
       />
 
       {/* Main Content Body */}
@@ -324,6 +363,7 @@ export default function App() {
                 revealData={revealData}
                 session={session}
                 onProceedToVerdict={handleProceedToVerdict}
+                returningToProgress={Boolean(returnStage)}
                 onChooseRoute={handleChooseRoute}
                 isMuted={isMuted}
               />

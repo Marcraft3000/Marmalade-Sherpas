@@ -10,11 +10,12 @@ async function answer(page) {
   await page.getByRole('button', { name: 'Continue', exact: true }).click();
   await page.getByLabel('In your own words').fill('I am unsure about the timing of this goal.');
   await page.getByRole('button', { name: 'Review my answers' }).click();
-  await expect(page.getByText('“I want to feel secure when I retire.”', { exact: true })).toBeVisible();
+  await expect(page.locator('.recap-quotes blockquote').first()).toHaveText('"I want to feel secure when I retire."');
   await page.getByRole('button', { name: 'Meet your plan' }).click();
 }
 
 test('desktop: literal quote, tension, real finding, sources, mission and check-in', async ({ page }) => {
+  test.setTimeout(60_000);
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -54,18 +55,21 @@ test('desktop: literal quote, tension, real finding, sources, mission and check-
   await page.keyboard.press('Escape');
   await expect(page.getByRole('button', { name: 'Open the source', exact: true })).toBeFocused();
   await page.getByRole('button', { name: 'This surprised me' }).click();
-  await expect(page.getByRole('status')).toContainText('Saved as something that surprised you');
+  await expect(page.getByRole('status').filter({ hasText: 'Saved as something that surprised you' })).toBeVisible();
   await page.getByLabel('Your question').fill('Which assumption matters most?');
   await page.getByRole('button', { name: 'Discuss with my advisor' }).click();
-  await expect(page.getByRole('status')).toContainText('Saved for your advisor');
+  await expect(page.getByRole('status').filter({ hasText: 'Saved for your advisor' })).toBeVisible();
   await page.getByRole('button', { name: 'Next finding', exact: true }).click();
   await page.getByRole('button', { name: 'Next finding', exact: true }).click();
   await page.getByRole('button', { name: 'Bring it together' }).click();
   await page.getByRole('button', { name: 'Choose a next step' }).click();
-  await page.getByRole('button', { name: 'I’ll take this step' }).click();
+  await page.getByRole('button', { name: 'Return to findings' }).click();
+  await expect(page.getByRole('button', { name: 'Finding 3', exact: true })).toHaveAttribute('aria-current', 'step');
+  await page.getByRole('button', { name: 'Return to your progress', exact: true }).first().click();
+  await page.getByRole('button', { name: /take this step/ }).click();
   await page.getByRole('button', { name: 'Try a follow-up' }).click();
   await page.getByRole('button', { name: /I made a start/ }).click();
-  await page.getByLabel('Anything you’d like to add?').fill('Reviewed the source.');
+  await page.getByLabel(/like to add/).fill('Reviewed the source.');
   await page.getByRole('button', { name: 'Save my check-in' }).click();
   await expect(page.getByText('Status: in progress', { exact: true })).toBeVisible();
   await page.reload();
@@ -79,6 +83,7 @@ test('mobile: import a different schema, missing score, reduced motion and no ov
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await expect(page.getByRole('button', { name: 'Open Samantha', exact: true })).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(390);
   await page.evaluate(() => document.fonts.ready);
   await page.screenshot({ path: 'test-results/cover-mobile.png', fullPage: true, animations: 'disabled' });
   await page.getByRole('button', { name: 'Import a client plan' }).click();
@@ -100,5 +105,27 @@ test('mobile: import a different schema, missing score, reduced motion and no ov
   await page.screenshot({ path: 'test-results/source-mobile.png', fullPage: true, animations: 'disabled' });
   await page.keyboard.press('Escape');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'You told us.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The bigger picture', exact: true })).toBeVisible();
+});
+
+test('advisor sees completed surveys and recovers an invitation after reopening the workspace', async ({ page }) => {
+  const id = '15cb3418-59b6-4a55-ba4f-cbe60810acb2';
+  const path = '/audit/' + id + '.' + 'A'.repeat(43);
+  const invitation = { id, planName: 'Sample client', status: 'pending', createdAt: '2026-11-16T00:00:00Z', expiresAt: '2026-12-16T00:00:00Z', completedAt: null };
+  await page.route('**/api/portal', route => route.fulfill({ json: { advisorPortal: true } }));
+  await page.route('**/api/advisor/workspace', route => route.fulfill({ json: { email: 'advisor@example.test', plans: [], invitations: [invitation] } }));
+  await page.route('**/api/advisor/invitations/' + id, route => route.fulfill({ json: { invitation, path, answers: [] } }));
+  await page.goto('/');
+  await expect(page.getByRole('link', { name: '0 new completed surveys' })).toBeVisible();
+  invitation.completedAt = '2026-11-17T10:30:00Z';
+  invitation.status = 'answered';
+  await page.getByRole('button', { name: 'Refresh' }).click();
+  await expect(page.getByRole('link', { name: '1 new completed surveys' })).toBeVisible();
+  await page.getByRole('button', { name: /Sample client/ }).click();
+  await expect(page.getByLabel('Invitation link')).toHaveValue(new URL(path, page.url()).href);
+  await expect(page.getByRole('link', { name: '0 new completed surveys' })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('link', { name: '0 new completed surveys' })).toBeVisible();
+  await page.getByRole('button', { name: /Sample client/ }).click();
+  await expect(page.getByLabel('Invitation link')).toHaveValue(new URL(path, page.url()).href);
 });

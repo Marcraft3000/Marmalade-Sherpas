@@ -122,6 +122,48 @@ export function normalizePlan(document, { id, filename = 'financial-health.json'
   const name = textValue(read('name')) || textValue(displayName) || partners.join(' & ') || 'Imported client';
   const score = scoreNumber(read('score'));
   const evidence = [];
+  function addEvidence(pointer, raw, details, unit) {
+    evidence.push({
+      id: `e-${createHash('sha256').update(pointer).digest('hex').slice(0, 12)}`,
+      ...details, source: { ...sourceFor(pointer, raw), unit },
+    });
+  }
+  if (inspection.recognized) {
+    const ratios = `${inspection.rootPath}/key_metrics/ratios`;
+    const cardBalance = `${ratios}/creditCardDebt/balance`;
+    const balance = atPointer(document, cardBalance);
+    if (Number.isFinite(balance)) addEvidence(cardBalance, balance, {
+      title: 'Credit card balance', figure: displayMetric({ value: balance, unit: 'USD' }), badge: 'PLAN DATA',
+      explanation: 'This is the credit card balance recorded in your plan.',
+      whyItMatters: 'Review the card rate, payments and available cash together to understand the trade-off with your reserve.',
+    }, 'USD');
+    if (Array.isArray(root.profile?.liabilities)) {
+      for (const [index, liability] of root.profile.liabilities.entries()) {
+        const rate = liability?.interest_rate;
+        if (liability?.type !== 'PERSONAL_CREDIT_CARD' || !Number.isFinite(rate) || rate < 0 || rate > 1) continue;
+        const path = inspection.rootPath + '/profile/liabilities/' + index + '/interest_rate';
+        const title = textValue(liability.name);
+        addEvidence(path, rate, {
+          title: title ? 'Credit card interest rate (' + title + ')' : 'Credit card interest rate',
+          figure: new Intl.NumberFormat('en-US', { style: 'percent', maximumFractionDigits: 4 }).format(rate),
+          badge: 'PLAN DATA', explanation: 'This is the interest rate listed for this card in the plan.',
+          whyItMatters: 'Compare it with the rate on your latest card statement when discussing repayment.',
+        }, 'decimal-rate');
+      }
+    }
+    const coverageGaps = `${ratios}/lifeInsurance/lifeInsuranceCoverageGapsAndExcess`;
+    for (const [index, key] of ['clientShortfall', 'coClientShortfall'].entries()) {
+      const path = `${coverageGaps}/${key}`;
+      const shortfall = atPointer(document, path);
+      if (!Number.isFinite(shortfall) || shortfall <= 0) continue;
+      addEvidence(path, shortfall, {
+        title: partners[index] ? `${partners[index]}'s life insurance shortfall` : 'Life insurance shortfall',
+        figure: displayMetric({ value: shortfall, unit: 'USD' }), badge: 'PLAN DATA',
+        explanation: 'This is the gap the plan reports between current life insurance and the lower end of its recommended coverage range.',
+        whyItMatters: 'Review the policies and the expenses that would still need paying if the household lost an income.',
+      }, 'USD');
+    }
+  }
   walkJson(document, (raw, pointer) => {
     if (!object(raw) || !textValue(raw.label)) return;
     if (raw.value === undefined && (raw.min === undefined || raw.max === undefined)) return;
@@ -130,7 +172,7 @@ export function normalizePlan(document, { id, filename = 'financial-health.json'
     evidence.push({
       id: `e-${createHash('sha256').update(pointer).digest('hex').slice(0, 12)}`,
       title: raw.label, figure: displayMetric(raw), badge: kindFor(raw, pointer),
-      explanation: [raw.label + '.', raw.period ? `The period covered is ${raw.period}.` : '', textValue(raw.note)].filter(Boolean).join(' '),
+      explanation: [raw.label + '.', raw.period ? `The period covered is ${raw.period}.` : ''].filter(Boolean).join(' '),
       whyItMatters: 'Read this in the context of your goals, alongside the rest of your plan.',
       source: sourceFor(pointer, raw),
       ...((projection && pointer.startsWith(`${inspection.rootPath}/key_metrics/facts/retirement/`)

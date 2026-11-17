@@ -47,11 +47,15 @@ Use the default domain shown in the Web App overview. Verify `/api/health` and c
 1. In your Supabase project, apply [the advisor portal migration](supabase/migrations/202611140001_advisor_portal.sql) followed by [the private plans migration](supabase/migrations/202611150001_advisor_plans.sql). Apply each migration once.
 2. In **Authentication → Users**, create and confirm a test advisor. Allow that user into the workspace by running `insert into public.audit_advisors (user_id) values ('<Auth user UUID>');` in SQL Editor.
 3. Add `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `SUPABASE_SECRET_KEY` to the Azure Web App environment. For local testing, put these settings in your ignored `.env`. Keep the secret key on the server.
-4. Set `ADVISOR_PORTAL=true` and keep `PUBLIC_DEMO=true` on Azure. The advisor workspace opens at `/` and each invitation opens its audit directly. Links are valid for 30 days. Copy the link when it is created because the database stores its hash.
+4. Set `ADVISOR_PORTAL=true` and keep `PUBLIC_DEMO=true` on Azure. The advisor workspace opens at `/` and each invitation opens its audit directly. Links are valid for 30 days and can be copied from the invitation details. Existing links continue to work until they expire. After a client submits their survey, the invitation receives a notification. The workspace refreshes every 30 seconds while visible and remembers which responses were opened in the current browser.
 
 Use a sample plan and fictional responses when verifying the flow. The advisor workspace can also import a client's JSON, preview the detected fields and findings, and create an invitation from that plan. Imported plans are scoped to the advisor who uploaded them in Supabase.
 
-For live plan analysis, set `ADVISOR_PLAN_AI=true` alongside `TEAM_KEY` and `LLM_PROXY_URL`. For live responses to questions on valid invitations, set `ADVISOR_QUESTIONS_AI=true`. These settings allow the specified calls while the rest of public demo mode stays mocked. Use synthetic data to test live requests. `MOCK_AI=true` keeps both paths offline.
+For live plan analysis and interview personalization, set `ADVISOR_PLAN_AI=true` and `ADVISOR_INTERVIEW_AI=true` alongside `TEAM_KEY` and `LLM_PROXY_URL`. Set `ADVISOR_QUESTIONS_AI=true` to let the model select passages when clients ask questions. `MOCK_AI=true` keeps these paths offline.
+
+To enable server narration on invitations, set `ADVISOR_TTS=true`, `TTS_VOICE_ID` and the proxy's `OPENROUTER_TTS_MODEL`. For direct ElevenLabs, set `TTS_PROVIDER=elevenlabs`, `ELEVENLABS_API_KEY` and `TTS_MODEL=eleven_flash_v2_5`. The app uses browser speech if the provider is unavailable. Remote narration reads the visible financial figures aloud, so use synthetic plans when testing providers.
+
+With Azure CLI and PowerShell 7 installed, run `az login` and then `pwsh -File .\scripts\deploy-azure.ps1` from the repository. The script uses the existing Supabase settings in Azure and copies the configured model and voice settings from your ignored `.env`. Use `-PackageOnly` to build the ZIP without deploying. Set a stable `AUDIT_INVITE_SIGNING_KEY` in Azure if you want it separate from the Supabase secret used by default.
 
 ## The experience
 
@@ -87,7 +91,7 @@ The model may choose relevant IDs from a bounded list of source-backed findings 
 
 Explanation templates retain distinctions such as projections versus current balances, annual amounts versus lump sums, and reserves versus money available after goals. Unsupported or absent data is not replaced with another family’s plan. Original recommendations remain inspectable; the app does not recalculate the financial plan.
 
-AI usage in the developer monitor is an estimate recorded by this app, not the team's authoritative remaining proxy budget. The listening button uses browser speech; ElevenLabs is not connected and no ElevenLabs key is required. Day 3 and day 30 remain simulated demo check-ins, not scheduled notifications.
+The developer monitor estimates AI usage from requests recorded by this app. Day 3 and day 30 are simulated check-ins.
 
 ## Validation
 

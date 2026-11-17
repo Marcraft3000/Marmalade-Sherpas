@@ -11,6 +11,7 @@ import { analyzePlan } from './planInference.mjs';
 import { aiService } from './aiService.mjs';
 import { auditEngine } from './auditEngine.mjs';
 import { advisorPortalEnabled, configureAdvisorPortal, portalErrorHandler } from './advisorPortal.mjs';
+import { sendNarration } from './speech.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 3001);
@@ -70,6 +71,10 @@ app.use('/api/audit', (req, res, next) => {
   req.auditEngine ??= auditEngine;
   next();
 });
+
+if (advisorPortalEnabled) {
+  app.post('/api/audit/speech', (req, res, next) => sendNarration(req, res).catch(next));
+}
 
 function saveSession(req, session) {
   if (req.saveAuditSession) return req.saveAuditSession(session);

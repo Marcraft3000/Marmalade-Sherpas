@@ -1,7 +1,4 @@
-/**
- * Web Speech API Utility for THE PLAN AUDIT
- * Completely free, runs locally in the browser, 0 API tokens spent!
- */
+import { fetchNarration } from './api';
 
 class SpeechService {
   constructor() {
@@ -49,10 +46,30 @@ class SpeechService {
 
   setMuted(muted) {
     this.isMuted = muted;
-    if (muted && this.synth) {
-      this.synth.cancel();
-      this.isSpeaking = false;
+    if (muted) this.stop();
+  }
+
+  async narrate({ sessionId, findingId, fallback }) {
+    if (this.isMuted) return;
+    this.stop();
+    const request = new AbortController();
+    this.narration = request;
+    try {
+      const blob = await fetchNarration(sessionId, findingId, request.signal);
+      if (request.signal.aborted) return;
+      if (blob?.size) {
+        const url = URL.createObjectURL(blob);
+        this.audio = new Audio(url);
+        this.audioUrl = url;
+        this.audio.onended = () => this.stop();
+        await this.audio.play();
+        return;
+      }
+    } catch {
+      if (request.signal.aborted) return;
     }
+    this.stop();
+    this.speak(fallback);
   }
 
   speak(text, onStart, onEnd) {
@@ -95,6 +112,17 @@ class SpeechService {
   }
 
   stop() {
+    this.narration?.abort();
+    this.narration = null;
+    if (this.audio) {
+      this.audio.onended = null;
+      this.audio.pause();
+      this.audio = null;
+    }
+    if (this.audioUrl) {
+      URL.revokeObjectURL(this.audioUrl);
+      this.audioUrl = null;
+    }
     if (this.synth) {
       this.synth.cancel();
       this.isSpeaking = false;

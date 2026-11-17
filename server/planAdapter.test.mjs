@@ -227,3 +227,44 @@ test('an unrelated question never gets a fabricated plan answer or enters the ad
     assert.ok(!briefing.advisorAgenda.includes('Hi how can I make pancakes?'));
   } finally { aiService.callChatCompletion = original; }
 });
+
+test('each sample concern leads to a source-backed finding and a relevant next step', async () => {
+  const scenarios = [
+    ['timothy-melanie-weah', 'We have savings, but should we pay down expensive credit card debt?', /credit card/i, /revolving card/i],
+    ['daniel-emily-johnson', 'How do we protect our children if one of us dies?', /life insurance/i, /life insurance|mortality/i],
+    ['michael-carter', 'Can I buy a home and still retire at 58?', /purchase a home/i, /home purchase/i],
+    ['samantha-lewis', 'Will my retirement savings last?', /run out at age 73/i, /retirement/i],
+  ];
+  for (const [caseId, concern, title, action] of scenarios) {
+    const engine = new AuditEngine();
+    const session = engine.createSession(caseId);
+    for (const [category, value] of Object.entries({ perceived_health: 50, confidence: 'Unsure', main_concern: concern, financial_priority: 'Make more room for our goals' })) {
+      await engine.handleInterrogationAnswer(session.id, { category, value });
+    }
+    const summary = await engine.generateInterrogationSummary(session.id);
+    assert.ok(summary.submittedAt);
+    const reveal = await engine.generateReveal(session.id);
+    const [first] = reveal.discoveries;
+    const raw = JSON.parse(fs.readFileSync(new URL(`../cases/${caseId}/financial-health.json`, import.meta.url)));
+    assert.match(first.title, title, caseId);
+    assert.deepEqual(first.source.raw, atPointer(raw, first.source.path));
+    assert.match((await engine.generateMission(session.id)).title, action, caseId);
+  }
+});
+
+test('a model can select supplied passages but cannot insert an unsupported guarantee', async () => {
+  const engine = new AuditEngine();
+  const session = await answered(engine, 'samantha-lewis');
+  const [finding] = (await engine.generateReveal(session.id)).discoveries;
+  const original = aiService.callChatCompletion;
+  try {
+    aiService.callChatCompletion = async () => ({ content: { answer: 'Your retirement income is guaranteed.' } });
+    const unsupported = await engine.exploreDiscovery(session.id, finding.id, 'What assumptions affect this retirement projection?');
+    assert.equal(unsupported.kind, 'unavailable');
+    aiService.callChatCompletion = async () => ({ content: { indices: [0, 100] } });
+    const supported = await engine.exploreDiscovery(session.id, finding.id, 'What assumptions affect this retirement projection?');
+    assert.equal(supported.answer, finding.explanation);
+  } finally {
+    aiService.callChatCompletion = original;
+  }
+});
