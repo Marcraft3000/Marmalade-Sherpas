@@ -612,7 +612,7 @@ export function configureAdvisorPortal(app) {
     const plan = await resolveAdvisorPlan(row.session.caseId, row.advisor_id);
     if (!plan) throw new PortalError(404, 'The plan for this invitation is unavailable.');
     req.auditEngine = new AuditEngine(() => plan, {
-      liveQuestions: process.env.ADVISOR_QUESTIONS_AI === 'true',
+      liveQuestions: process.env.ADVISOR_QUESTIONS_AI !== 'false',
       liveInterview: process.env.ADVISOR_INTERVIEW_AI === 'true',
     });
     req.auditEngine.restoreSession(row.session);

@@ -41,7 +41,7 @@ The **Clients** list shows each invitation's journey (invited → opened → per
 
 Use a sample plan and fictional responses when verifying the flow. The advisor workspace can also import a client's JSON, preview the detected fields and findings, and create an invitation from that plan. Imported plans are scoped to the advisor who uploaded them in Supabase.
 
-For live plan analysis and interview personalization, set `ADVISOR_PLAN_AI=true` and `ADVISOR_INTERVIEW_AI=true` alongside `TEAM_KEY` and `LLM_PROXY_URL`. Set `ADVISOR_QUESTIONS_AI=true` to let the model select passages when clients ask questions. `MOCK_AI=true` keeps these paths offline.
+For live plan analysis and interview personalization, set `ADVISOR_PLAN_AI=true` and `ADVISOR_INTERVIEW_AI=true` alongside `TEAM_KEY` and `LLM_PROXY_URL`. Client questions use the model by default (`ADVISOR_QUESTIONS_AI=false` turns it off): it picks the matching source anywhere in the plan and answers in plain language, and any number in the answer must appear in that source. `MOCK_AI=true` keeps these paths offline.
 
 To enable server narration on invitations, set `ADVISOR_TTS=true`, `TTS_VOICE_ID` and the proxy's `OPENROUTER_TTS_MODEL`. For direct ElevenLabs, set `TTS_PROVIDER=elevenlabs`, `ELEVENLABS_API_KEY` and `TTS_MODEL=eleven_flash_v2_5`. The app uses browser speech if the provider is unavailable. Remote narration reads the visible financial figures aloud, so use synthetic plans when testing providers.
 

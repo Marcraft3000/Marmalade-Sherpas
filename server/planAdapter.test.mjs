@@ -196,8 +196,9 @@ test('a chosen route changes the first finding and a deeper question reaches the
   assert.throws(() => engine.chooseRoute(s.id, 'made-up'), /Choose a finding/);
   const exploration = await engine.exploreDiscovery(s.id, target.id, 'What does this cover?');
   assert.equal(exploration.source.path, target.source.path);
-  assert.equal(exploration.kind, 'unavailable');
-  assert.match(exploration.answer, /cannot answer.*reliably/i);
+  // Without a model, the client is pointed to the open finding itself.
+  assert.equal(exploration.kind, 'answered');
+  assert.ok(exploration.answer.startsWith(target.title));
   await engine.generateVerdict(s.id);
   const mission = await engine.generateMission(s.id);
   assert.deepEqual(mission.checkpoints.map(item => item.day), [3, 30]);
@@ -218,11 +219,11 @@ test('an unrelated question never gets a fabricated plan answer or enters the ad
   try {
     const response = await engine.exploreDiscovery(session.id, reveal.discoveries[0].id, 'Hi how can I make pancakes?');
     assert.equal(response.kind, 'off_topic');
-    assert.match(response.answer, /outside this finding/i);
+    assert.match(response.answer, /figure, assumption or recommendation/i);
     assert.doesNotMatch(response.answer, /spending left unpaid/i);
     const greeting = await engine.exploreDiscovery(session.id, reveal.discoveries[0].id, 'hello');
     assert.equal(greeting.kind, 'off_topic');
-    assert.match(greeting.answer, /outside this finding/i);
+    assert.match(greeting.answer, /figure, assumption or recommendation/i);
     const briefing = await engine.generateAdvisorBriefing(session.id);
     assert.ok(!briefing.advisorAgenda.includes('Hi how can I make pancakes?'));
   } finally { aiService.callChatCompletion = original; }
@@ -258,12 +259,19 @@ test('a model can select supplied passages but cannot insert an unsupported guar
   const [finding] = (await engine.generateReveal(session.id)).discoveries;
   const original = aiService.callChatCompletion;
   try {
-    aiService.callChatCompletion = async () => ({ content: { answer: 'Your retirement income is guaranteed.' } });
+    aiService.callChatCompletion = async () => ({ success: true, content: { answer: 'Your retirement income is guaranteed.' } });
     const unsupported = await engine.exploreDiscovery(session.id, finding.id, 'What assumptions affect this retirement projection?');
     assert.equal(unsupported.kind, 'unavailable');
-    aiService.callChatCompletion = async () => ({ content: { indices: [0, 100] } });
-    const supported = await engine.exploreDiscovery(session.id, finding.id, 'What assumptions affect this retirement projection?');
-    assert.equal(supported.answer, finding.explanation);
+    aiService.callChatCompletion = async () => ({ success: true, content: { sourceId: finding.id, answer: 'Your savings would last 99,999,999 more years.' } });
+    const invented = await engine.exploreDiscovery(session.id, finding.id, 'What assumptions affect this retirement projection?');
+    assert.equal(invented.kind, 'unavailable');
+    aiService.callChatCompletion = async () => ({ success: true, content: { sourceId: finding.id, answer: 'The plan projects when savings would run out, based on its stated assumptions.' } });
+    const supported = await engine.exploreDiscovery(session.id, finding.id, 'What does this mean for my retirement?');
+    assert.equal(supported.kind, 'answered');
+    assert.equal(supported.answer, 'The plan projects when savings would run out, based on its stated assumptions.');
+    const direct = await engine.exploreDiscovery(session.id, finding.id, 'Yearly retirement spending need (excluding estimated long-term care');
+    assert.equal(direct.kind, 'answered');
+    assert.match(direct.answer, /^The plan lists /);
   } finally {
     aiService.callChatCompletion = original;
   }
