@@ -82,6 +82,44 @@ test('advisor portal works completely in local dev mode without Supabase', async
   const detailData = await detailRes.json();
   assert.equal(detailData.invitation.status, 'in_progress'); // opened_at was set
   assert.ok(detailData.path);
+  assert.equal(detailData.invitation.step, 'opened');
+
+  // 6. Advisor leaves a note and adds the client's email; the client sees the note on return
+  const noteRes = await advisor(`/invitations/${inviteData.invitation.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ note: 'See you on Thursday.', clientEmail: 'client@example.com' }),
+  });
+  assert.equal(noteRes.status, 200);
+  const noted = (await noteRes.json()).invitation;
+  assert.equal(noted.note, 'See you on Thursday.');
+  assert.equal(noted.clientEmail, 'client@example.com');
+  const reopened = await (await fetch(root + '/api/invitations/open', { headers: { 'X-Audit-Invite': token } })).json();
+  assert.equal(reopened.advisorNote.text, 'See you on Thursday.');
+
+  // 7. Without an email provider, sending returns a ready-to-send mailto link
+  const sendRes = await advisor(`/invitations/${inviteData.invitation.id}/send`, { method: 'POST', body: JSON.stringify({ kind: 'invite' }) });
+  assert.equal(sendRes.status, 200);
+  const { delivery } = await sendRes.json();
+  assert.equal(delivery.sent, false);
+  assert.ok(delivery.mailto.startsWith('mailto:client%40example.com?subject='));
+  const early = await advisor(`/invitations/${inviteData.invitation.id}/send`, { method: 'POST', body: JSON.stringify({ kind: 'day3' }) });
+  assert.equal(early.status, 400);
+
+  // 8. Reminder endpoint requires the cron secret
+  const cron = await fetch(root + '/api/cron/reminders', { method: 'POST' });
+  assert.equal(cron.status, 401);
+
+  // 9. Sign-up and demo access
+  const signup = await advisor('/signup', { method: 'POST', body: JSON.stringify({ name: 'Ana', email: 'ana@example.com', password: 'short' }) });
+  assert.equal(signup.status, 400);
+  const created = await advisor('/signup', { method: 'POST', body: JSON.stringify({ name: 'Ana', email: 'ana@example.com', password: 'long-enough-password' }) });
+  assert.equal(created.status, 201);
+  const named = await (await advisor('/workspace')).json();
+  assert.equal(named.name, 'Ana');
+  const demo = await advisor('/demo', { method: 'POST' });
+  assert.equal(demo.status, 200);
+  const config = await (await fetch(root + '/api/portal')).json();
+  assert.equal(config.demo, true);
 
   server.close();
 });

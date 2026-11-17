@@ -26,6 +26,8 @@ import {
   fetchUsageStats,
   invitationPath,
   openInvitation,
+  invitationContext,
+  requestedCheckIn,
 } from './utils/api';
 import { chooseRoute } from './utils/api';
 import { speechService } from './utils/speech';
@@ -53,6 +55,9 @@ export default function App() {
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [mockMode, setMockMode] = useState(true);
   const [publicDemo, setPublicDemo] = useState(false);
+  const [advisorNote, setAdvisorNote] = useState(null);
+  const [noteDismissed, setNoteDismissed] = useState(false);
+  const [realCheckIn, setRealCheckIn] = useState(null);
 
   function switchStage(next) {
     if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -82,6 +87,15 @@ export default function App() {
           try {
             const restored = invitationPath ? initial : await fetchSession(savedSessionId);
             if (restored?.version === 2) {
+              // A reminder link (or a check-in that is already due) opens the real check-in directly.
+              const checkInDay = invitationPath && restored.mission
+                ? requestedCheckIn || invitationContext.dueCheckIns[0] || null : null;
+              if (invitationPath) setAdvisorNote(invitationContext.advisorNote);
+              if (checkInDay) {
+                setRealCheckIn(checkInDay);
+                restored.simulatedDay = checkInDay;
+                restored.currentStage = 'followup';
+              }
               setSession(restored);
               const reviewingFrom = sessionStorage.getItem(`audit-review-${restored.id}`);
               const reviewStage = restored.reveal && reviewStages.includes(reviewingFrom) ? reviewingFrom : null;
@@ -313,6 +327,10 @@ export default function App() {
 
       {/* Main Content Body */}
       <main className="flex-1 flex flex-col justify-center">
+        {advisorNote && !noteDismissed && session && <aside className="advisor-note-banner" aria-label="Message from your advisor">
+          <div><span className="eyebrow">A note from your advisor</span><p>{advisorNote.text}</p></div>
+          <button className="quiet-action" onClick={() => setNoteDismissed(true)} aria-label="Hide the advisor note">×</button>
+        </aside>}
         {error && <div role="alert" className="app-error">{error}<button onClick={() => setError('')} aria-label="Dismiss error">×</button></div>}
         {transitioning && <div className="app-status" role="status">Preparing the findings from your plan…</div>}
         {loading ? (
@@ -380,6 +398,7 @@ export default function App() {
                 session={session}
                 mission={missionData}
                 onSubmitFollowUp={handleSubmitFollowUp}
+                realCheckIn={realCheckIn}
                 onResetAudit={invitationPath ? undefined : handleResetSession}
                 onOpenAdvisorBriefing={invitationPath ? undefined : handleOpenAdvisorBriefing}
               />

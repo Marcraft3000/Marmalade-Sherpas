@@ -159,3 +159,8 @@
 ::view-transition-old(root) { animation: 450ms cubic-bezier(.4,0,.8,1) both stage-exit; }
 ::view-transition-new(root) { animation: 850ms cubic-bezier(.16,1,.3,1) both stage-arrive; }
 @media (prefers-reduced-motion: reduce) { .app-shell, .site-header, .app-footer { transition: none !important; } ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; } }
+
+/* Advisor note shown when a client returns to their invitation */
+.advisor-note-banner { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; width: min(1140px, 91%); margin: 18px auto 0; padding: 14px 18px; border: 1px solid #d6e3d0; border-left: 4px solid #04724d; background: #eef4ea; border-radius: 6px; }
+.advisor-note-banner p { margin-top: 4px; font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+.advisor-note-banner .quiet-action { font-size: 20px; line-height: 1; padding: 2px 8px; }

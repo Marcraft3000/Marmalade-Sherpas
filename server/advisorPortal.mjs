@@ -3,6 +3,7 @@ import express from 'express';
 import { AuditEngine } from './auditEngine.mjs';
 import { getAllCasesOverview, getCaseDetails, preparePlanImport, sampleReportPath } from './casesService.mjs';
 import { analyzePlan } from './planInference.mjs';
+import { emailConfigured, invitationMessage, mailtoLink, sendEmail } from './email.mjs';
 
 const enabled = process.env.ADVISOR_PORTAL !== 'false';
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
@@ -12,7 +13,12 @@ const cookieName = 'plan_audit_advisor';
 const cookieOptions = { httpOnly: true, sameSite: 'strict', secure: process.env.PUBLIC_DEMO === 'true' || process.env.NODE_ENV === 'production', path: '/api/advisor' };
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const invitationKey = process.env.AUDIT_INVITE_SIGNING_KEY || secretKey || 'sherpas-hackathon-audit-key-2026';
+const invitationKey = process.env.AUDIT_INVITE_SIGNING_KEY || secretKey || randomUUID();
+const signupCode = process.env.ADVISOR_SIGNUP_CODE || '';
+const demoEmail = process.env.DEMO_ADVISOR_EMAIL || '';
+const demoPassword = process.env.DEMO_ADVISOR_PASSWORD || '';
+const publicUrl = (process.env.PUBLIC_URL || process.env.RENDER_EXTERNAL_URL || '').replace(/\/$/, '');
+const DAY = 24 * 3600 * 1000;
 
 function signedInvitation(id) {
   const signature = createHmac('sha256', invitationKey).update(`plan-audit:invitation:v1:${id}`).digest('base64url');
@@ -27,6 +33,7 @@ const isSupabaseConfigured = Boolean(url && publishableKey && secretKey);
 const LOCAL_ADVISOR_ID = '00000000-0000-4000-8000-000000000001';
 const localStore = {
   advisorEmail: 'advisor@sherpaswealth.com',
+  advisors: new Map(),
   plans: new Map(),
   invitations: new Map(),
 };
@@ -49,8 +56,17 @@ async function localDb(endpoint, { method = 'GET', body, accessToken } = {}) {
     return { id: LOCAL_ADVISOR_ID, email: localStore.advisorEmail };
   }
 
+  if (pathPart === '/auth/v1/admin/users') {
+    localStore.advisorEmail = body.email.trim();
+    return { id: LOCAL_ADVISOR_ID, email: localStore.advisorEmail };
+  }
+
   if (pathPart === '/rest/v1/audit_advisors') {
-    return [{ user_id: LOCAL_ADVISOR_ID }];
+    if (method === 'POST') {
+      localStore.advisors.set(body.user_id, body);
+      return [body];
+    }
+    return [{ user_id: LOCAL_ADVISOR_ID, ...localStore.advisors.get(LOCAL_ADVISOR_ID) }];
   }
 
   if (pathPart === '/rest/v1/audit_plans') {
@@ -77,6 +93,7 @@ async function localDb(endpoint, { method = 'GET', body, accessToken } = {}) {
         expires_at: body.expires_at || expiresAt,
         opened_at: body.opened_at || null,
         revision: body.revision ?? 0,
+        reminders: body.reminders || {},
       };
       localStore.invitations.set(row.id, row);
       return [row];
@@ -161,30 +178,113 @@ function table(name, filters = {}, options) {
 
 async function requireAdvisorAccess(id) {
   if (!uuidPattern.test(id || '')) throw new PortalError(401, 'Sign in with your advisor account.');
-  const [advisor] = await table('audit_advisors', { user_id: `eq.${id}`, select: 'user_id' });
+  const [advisor] = await table('audit_advisors', { user_id: `eq.${id}`, select: 'user_id,display_name' });
   if (!advisor) throw new PortalError(403, 'This account has no advisor access.');
+  return advisor;
 }
 
 const signedIn = route(async (req, res, next) => {
   const token = req.get('cookie')?.split('; ').find(value => value.startsWith(`${cookieName}=`))?.slice(cookieName.length + 1);
   if (!token) throw new PortalError(401, 'Sign in with your advisor account.');
   const user = await supabase('/auth/v1/user', { accessToken: token });
-  await requireAdvisorAccess(user.id);
-  req.advisor = user;
+  const access = await requireAdvisorAccess(user.id);
+  req.advisor = { ...user, name: access.display_name || '' };
   next();
 });
 
+const invitationColumns = 'id,created_at,expires_at,opened_at,session,client_name,client_email,advisor_note,advisor_note_at,reminders';
+
+// Where the client is in the journey, from invitation to the day 30 check-in.
+function journeyStep(row) {
+  const session = row.session;
+  const followUps = session.followUpHistory || [];
+  if (followUps.some(item => item.day === 30)) return 'day30';
+  if (followUps.some(item => item.day === 3)) return 'day3';
+  if (session.mission?.acceptedAt || ['considering', 'rejected'].includes(session.mission?.status)) return 'next_step';
+  if (session.reveal) return 'reveal';
+  if (session.summary) return 'survey';
+  if (row.opened_at) return 'opened';
+  return 'invited';
+}
+
+function dueCheckIns(row, at = Date.now()) {
+  const accepted = Date.parse(row.session.mission?.acceptedAt || '');
+  if (!accepted) return [];
+  const done = new Set((row.session.followUpHistory || []).map(item => item.day));
+  return [3, 30].filter(day => !done.has(day) && at >= accepted + day * DAY);
+}
+
 function advisorView(row) {
   const session = row.session;
+  const lastFollowUp = (session.followUpHistory || []).at(-1);
   return {
     id: row.id,
     planName: session.caseName,
+    clientName: row.client_name || session.caseName,
+    clientEmail: row.client_email || '',
     createdAt: row.created_at,
     expiresAt: row.expires_at,
     completedAt: session.summary ? session.summary.submittedAt || session.answers.at(-1)?.timestamp || row.created_at : null,
     status: session.summary ? 'answered' : row.opened_at ? 'in_progress' : 'pending',
+    step: journeyStep(row),
     answerCount: session.answers.length,
+    expectedScore: session.expectedScore ?? null,
+    partnerScores: session.partnerScores || {},
+    planScore: session.reveal ? session.reveal.actualScore ?? null : null,
+    nextStep: session.mission ? { title: session.mission.title, status: session.mission.status, acceptedAt: session.mission.acceptedAt } : null,
+    lastCheckIn: lastFollowUp ? { day: lastFollowUp.day, status: lastFollowUp.status } : null,
+    dueCheckIns: dueCheckIns(row),
+    note: row.advisor_note || '',
+    noteAt: row.advisor_note_at || null,
+    reminders: row.reminders || {},
   };
+}
+
+function absoluteLink(req, path) {
+  const origin = publicUrl || (req ? `${req.protocol}://${req.get('host')}` : '');
+  return origin + path;
+}
+
+function messageFor(kind, row, link, advisorName) {
+  const day = kind === 'day3' ? 3 : 30;
+  return invitationMessage({
+    kind,
+    clientName: row.client_name,
+    advisorName,
+    link: kind === 'invite' ? link : `${link}?checkin=${day}`,
+    missionTitle: row.session.mission?.title,
+    prompt: row.session.mission?.checkpoints?.find(item => item.day === day)?.prompt,
+    note: row.advisor_note,
+  });
+}
+
+async function deliver(kind, row, link, advisorName) {
+  const message = messageFor(kind, row, link, advisorName);
+  const result = await sendEmail(row.client_email, message);
+  if (result.sent) {
+    const reminders = { ...(row.reminders || {}), [kind]: new Date().toISOString() };
+    await table('audit_invitations', { id: `eq.${row.id}` }, { method: 'PATCH', body: { reminders } });
+    row.reminders = reminders;
+  }
+  return { ...result, mailto: mailtoLink(row.client_email, message) };
+}
+
+// Sends day 3 and day 30 check-in emails that are due and have not been sent yet.
+export async function sendDueReminders() {
+  if (!enabled || !emailConfigured) return { sent: 0, skipped: emailConfigured ? 'portal_disabled' : 'email_not_configured' };
+  if (!publicUrl) return { sent: 0, skipped: 'PUBLIC_URL not set' };
+  const rows = await table('audit_invitations', { expires_at: `gt.${new Date().toISOString()}`, select: `${invitationColumns},advisor_id` });
+  let sent = 0;
+  for (const row of rows) {
+    if (!row.client_email) continue;
+    for (const day of dueCheckIns(row)) {
+      const kind = `day${day}`;
+      if (row.reminders?.[kind]) continue;
+      const result = await deliver(kind, row, publicUrl + `/audit/${signedInvitation(row.id)}`);
+      if (result.sent) sent += 1;
+    }
+  }
+  return { sent };
 }
 
 async function findInvitation(token) {
@@ -219,7 +319,7 @@ function advisorPlanInput(operation) {
 }
 
 export function configureAdvisorPortal(app) {
-  app.get('/api/portal', (req, res) => res.json({ advisorPortal: enabled }));
+  app.get('/api/portal', (req, res) => res.json({ advisorPortal: enabled, signupCode: Boolean(signupCode), demo: Boolean(demoEmail && demoPassword) || !isSupabaseConfigured, email: emailConfigured }));
   if (!enabled) return;
 
   const advisor = express.Router();
@@ -235,11 +335,74 @@ export function configureAdvisorPortal(app) {
     if (typeof email !== 'string' || typeof password !== 'string' || !email.trim() || !password || email.length > 320 || password.length > 1024) {
       throw new PortalError(400, 'Enter your advisor email and password.');
     }
-    const auth = await supabase('/auth/v1/token?grant_type=password', { method: 'POST', body: { email: email.trim(), password } });
+    const user = await startSession(res, email.trim(), password);
+    res.json({ email: user.email });
+  }));
+  async function startSession(res, email, password) {
+    const auth = await supabase('/auth/v1/token?grant_type=password', { method: 'POST', body: { email, password } });
     await requireAdvisorAccess(auth.user.id);
     res.cookie(cookieName, auth.access_token, { ...cookieOptions, maxAge: auth.expires_in * 1000 });
-    res.json({ email: auth.user.email });
+    return auth.user;
+  }
+
+  // Creates a confirmed Supabase user with the server key and grants it advisor access.
+  async function registerAdvisor({ email, password, name }) {
+    let user;
+    if (isSupabaseConfigured) {
+      const headers = { apikey: secretKey, 'Content-Type': 'application/json' };
+      if (secretKey.startsWith('eyJ')) headers.Authorization = `Bearer ${secretKey}`;
+      let response;
+      try {
+        response = await fetch(`${url}/auth/v1/admin/users`, { method: 'POST', headers, body: JSON.stringify({ email, password, email_confirm: true, user_metadata: { name } }), signal: AbortSignal.timeout(10000) });
+      } catch {
+        throw new PortalError(503, 'The advisor service is temporarily unavailable. Try again.');
+      }
+      const payload = await response.json().catch(() => ({}));
+      if (response.status === 422 || /already/i.test(payload.msg || payload.message || '')) throw new PortalError(409, 'An account with this email already exists. Sign in instead.');
+      if (response.status === 400) throw new PortalError(400, payload.msg || payload.message || 'Use a valid email and a password of at least 6 characters.');
+      if (!response.ok) {
+        console.error('Advisor registration failed:', response.status);
+        throw new PortalError(503, 'The advisor service is temporarily unavailable. Try again.');
+      }
+      user = payload.user || payload;
+    } else {
+      user = await localDb('/auth/v1/admin/users', { method: 'POST', body: { email } });
+    }
+    await table('audit_advisors', {}, { method: 'POST', body: { user_id: user.id, email, display_name: name || null } });
+    return user;
+  }
+
+  advisor.post('/signup', route(async (req, res) => {
+    const { email, password, name, code } = req.body || {};
+    if (typeof email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim()) || email.length > 320) throw new PortalError(400, 'Enter a valid email address.');
+    if (typeof password !== 'string' || password.length < 8 || password.length > 1024) throw new PortalError(400, 'Use a password of at least 8 characters.');
+    if (signupCode && code !== signupCode) throw new PortalError(403, 'The team code is not correct. Ask your firm for the advisor code.');
+    const cleanName = typeof name === 'string' ? name.trim().slice(0, 120) : '';
+    await registerAdvisor({ email: email.trim(), password, name: cleanName });
+    const user = await startSession(res, email.trim(), password);
+    res.status(201).json({ email: user.email });
   }));
+
+  // Shared demo account for judges and visitors; it only ever contains sample plans.
+  advisor.post('/demo', route(async (req, res) => {
+    if (!isSupabaseConfigured) {
+      const user = await startSession(res, 'demo@theplanaudit.app', 'demo');
+      return res.json({ email: user.email });
+    }
+    if (!demoEmail || !demoPassword) throw new PortalError(404, 'The demo workspace is not available.');
+    try {
+      const user = await startSession(res, demoEmail, demoPassword);
+      return res.json({ email: user.email });
+    } catch (error) {
+      if (!(error instanceof PortalError) || error.status !== 401) throw error;
+    }
+    await registerAdvisor({ email: demoEmail, password: demoPassword, name: 'Demo advisor' }).catch(error => {
+      if (error.status !== 409) throw error;
+    });
+    const user = await startSession(res, demoEmail, demoPassword);
+    res.json({ email: user.email });
+  }));
+
   advisor.post('/logout', (req, res) => {
     res.clearCookie(cookieName, cookieOptions);
     res.sendStatus(204);
@@ -260,17 +423,19 @@ export function configureAdvisorPortal(app) {
   advisor.get('/workspace', route(async (req, res) => {
     const scope = { advisor_id: `eq.${req.advisor.id}`, order: 'created_at.desc' };
     const [rows, imported] = await Promise.all([
-      table('audit_invitations', { ...scope, select: 'id,created_at,expires_at,opened_at,session' }),
+      table('audit_invitations', { ...scope, select: invitationColumns }),
       table('audit_plans', { ...scope, select: 'id,name,couple_mode' }),
     ]);
     const plans = [
       ...imported.map(({ id, name, couple_mode }) => ({ id, name, coupleMode: couple_mode, imported: true })),
       ...getAllCasesOverview().filter(plan => !plan.imported).map(({ id, name, coupleMode }) => ({ id, name, coupleMode })),
     ];
-    res.json({ email: req.advisor.email, plans, invitations: rows.map(advisorView) });
+    res.json({ email: req.advisor.email, name: req.advisor.name, emailDelivery: emailConfigured, plans, invitations: rows.map(advisorView) });
   }));
   advisor.post('/invitations', route(async (req, res) => {
-    const { caseId, coupleMode } = req.body || {};
+    const { caseId, coupleMode, clientName, clientEmail, note, sendNow } = req.body || {};
+    const email = typeof clientEmail === 'string' ? clientEmail.trim().slice(0, 320) : '';
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new PortalError(400, 'Enter a valid client email or leave it empty.');
     const plan = await resolveAdvisorPlan(caseId, req.advisor.id);
     if (!plan) throw new PortalError(400, 'Choose a plan in your workspace.');
     const session = new AuditEngine(() => plan).createSession(caseId, coupleMode === true);
@@ -283,21 +448,68 @@ export function configureAdvisorPortal(app) {
         advisor_id: req.advisor.id,
         token_hash: tokenHash(token),
         session,
+        client_name: typeof clientName === 'string' && clientName.trim() ? clientName.trim().slice(0, 120) : null,
+        client_email: email || null,
+        advisor_note: typeof note === 'string' && note.trim() ? note.trim().slice(0, 1000) : null,
+        advisor_note_at: typeof note === 'string' && note.trim() ? new Date().toISOString() : null,
+        reminders: {},
       },
     });
-    res.status(201).json({ invitation: advisorView(row), path: `/audit/${token}` });
+    const path = `/audit/${token}`;
+    const delivery = sendNow === true && email ? await deliver('invite', row, absoluteLink(req, path), req.advisor.name) : null;
+    res.status(201).json({ invitation: advisorView(row), path, delivery });
   }));
   advisor.get('/invitations/:id', route(async (req, res) => {
     if (!uuidPattern.test(req.params.id)) throw new PortalError(404, 'Invitation not found.');
-    const [row] = await table('audit_invitations', { id: `eq.${req.params.id}`, advisor_id: `eq.${req.advisor.id}`, select: 'id,created_at,expires_at,opened_at,session' });
-    if (!row) throw new PortalError(404, 'Invitation not found.');
+    const row = await ownInvitation(req);
     const engine = new AuditEngine();
     engine.sessions.set(row.session.id, row.session);
     const briefing = row.session.reveal?.version === 2 ? engine.getAdvisorBriefing(row.session.id) : null;
     const path = Date.parse(row.expires_at) > Date.now() ? `/audit/${signedInvitation(row.id)}` : null;
     res.json({ invitation: advisorView(row), path, answers: row.session.answers, briefing });
   }));
+  advisor.patch('/invitations/:id', route(async (req, res) => {
+    const row = await ownInvitation(req);
+    const body = {};
+    if (typeof req.body?.note === 'string') {
+      body.advisor_note = req.body.note.trim().slice(0, 1000) || null;
+      body.advisor_note_at = body.advisor_note ? new Date().toISOString() : null;
+    }
+    if (typeof req.body?.clientName === 'string') body.client_name = req.body.clientName.trim().slice(0, 120) || null;
+    if (typeof req.body?.clientEmail === 'string') {
+      const email = req.body.clientEmail.trim();
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new PortalError(400, 'Enter a valid client email.');
+      body.client_email = email || null;
+    }
+    const [updated] = await table('audit_invitations', { id: `eq.${row.id}`, advisor_id: `eq.${req.advisor.id}` }, { method: 'PATCH', body });
+    res.json({ invitation: advisorView({ ...row, ...updated, session: row.session }) });
+  }));
+  // Sends the invitation or a check-in reminder now; without an email provider it returns a mailto link.
+  advisor.post('/invitations/:id/send', route(async (req, res) => {
+    const row = await ownInvitation(req);
+    const kind = req.body?.kind;
+    if (!['invite', 'day3', 'day30'].includes(kind)) throw new PortalError(400, 'Choose which message to send.');
+    if (kind !== 'invite' && !row.session.mission) throw new PortalError(400, 'The client has not chosen a next step yet.');
+    if (Date.parse(row.expires_at) <= Date.now()) throw new PortalError(400, 'This invitation has expired. Create a new invitation.');
+    const delivery = await deliver(kind, row, absoluteLink(req, `/audit/${signedInvitation(row.id)}`), req.advisor.name);
+    res.json({ delivery, invitation: advisorView(row) });
+  }));
   app.use('/api/advisor', advisor);
+
+  async function ownInvitation(req) {
+    if (!uuidPattern.test(req.params.id)) throw new PortalError(404, 'Invitation not found.');
+    const [row] = await table('audit_invitations', { id: `eq.${req.params.id}`, advisor_id: `eq.${req.advisor.id}`, select: invitationColumns });
+    if (!row) throw new PortalError(404, 'Invitation not found.');
+    return row;
+  }
+
+  // External schedulers (GitHub Actions, cron-job.org) call this daily; the server also checks hourly.
+  app.post('/api/cron/reminders', route(async (req, res) => {
+    const secret = process.env.CRON_SECRET;
+    const given = req.get('X-Cron-Secret') || '';
+    if (!secret || given.length !== secret.length || !timingSafeEqual(Buffer.from(given), Buffer.from(secret))) throw new PortalError(401, 'Not allowed.');
+    res.json(await sendDueReminders());
+  }));
 
   client.get('/open', route(async (req, res) => {
     const row = await findInvitation(req.get('X-Audit-Invite'));
@@ -305,7 +517,7 @@ export function configureAdvisorPortal(app) {
       await table('audit_invitations', { id: `eq.${row.id}`, opened_at: 'is.null' }, { method: 'PATCH', body: { opened_at: new Date().toISOString() } });
     }
     const session = row.session.caseId.startsWith('import-') ? row.session : new AuditEngine().restoreSession(row.session);
-    res.json({ session });
+    res.json({ session, advisorNote: row.advisor_note ? { text: row.advisor_note, at: row.advisor_note_at } : null, dueCheckIns: dueCheckIns(row) });
   }));
   app.use('/api/invitations', client);
 

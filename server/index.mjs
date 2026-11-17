@@ -10,7 +10,7 @@ import { getAllCasesOverview, getCaseDetails, getCaseBriefForLLM, importPlan, sa
 import { analyzePlan } from './planInference.mjs';
 import { aiService } from './aiService.mjs';
 import { auditEngine } from './auditEngine.mjs';
-import { advisorPortalEnabled, configureAdvisorPortal, portalErrorHandler } from './advisorPortal.mjs';
+import { advisorPortalEnabled, configureAdvisorPortal, portalErrorHandler, sendDueReminders } from './advisorPortal.mjs';
 import { sendNarration } from './speech.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -394,6 +394,15 @@ ${caseBrief}`;
   browserWs.on('error', cleanup);
   upstreamWs.on('close', cleanup);
   upstreamWs.on('error', cleanup);
+}
+
+// Real day 3 / day 30 check-in emails. Hosts that sleep should also call POST /api/cron/reminders.
+if (advisorPortalEnabled) {
+  const checkReminders = () => sendDueReminders()
+    .then(result => { if (result.sent) console.log(`Sent ${result.sent} check-in reminder(s).`); })
+    .catch(error => console.warn('Reminder check failed:', error.message));
+  setTimeout(checkReminders, 60 * 1000).unref();
+  setInterval(checkReminders, 60 * 60 * 1000).unref();
 }
 
 server.listen(PORT, () => {

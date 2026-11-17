@@ -25,8 +25,18 @@ export async function openInvitation() {
   if (!inviteToken) throw new Error('Invalid invitation');
   const res = await auditFetch('/api/invitations/open');
   if (!res.ok) throw new Error('Invitation unavailable');
-  return (await res.json()).session;
+  const payload = await res.json();
+  invitationContext = { advisorNote: payload.advisorNote || null, dueCheckIns: payload.dueCheckIns || [] };
+  return payload.session;
 }
+
+// Advisor note and check-ins due for the opened invitation.
+export let invitationContext = { advisorNote: null, dueCheckIns: [] };
+export const requestedCheckIn = (() => {
+  if (typeof window === 'undefined') return null;
+  const day = Number(new URLSearchParams(window.location?.search || '').get('checkin'));
+  return [3, 30].includes(day) ? day : null;
+})();
 
 export async function advisorRequest(path, options = {}) {
   const res = await fetch('/api/advisor' + path, {
