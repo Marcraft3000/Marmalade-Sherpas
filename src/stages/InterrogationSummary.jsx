@@ -1,10 +1,13 @@
 import React from 'react';
 import { ArrowRight, Pencil } from 'lucide-react';
+import Narration from '../components/Narration';
+import { summaryNarration } from '../utils/narration';
 export default function InterrogationSummary({ summary, onProceedToReveal, onEditAnswers }) {
   const concerns = summary?.partnerConcerns?.length
     ? summary.partnerConcerns : [{ partner: null, value: summary?.mainConcern }];
   return <section className="recap-stage story-shell">
     <p className="eyebrow">A moment before the numbers</p><h1>This is what<br /><em>matters to you.</em></h1>
+    <Narration label="Listen to the recap" text={summaryNarration(summary)} />
     <div className="recap-layout">
       <div className="recap-quotes">
         <span className="eyebrow">{concerns.length > 1 ? 'Your concerns' : 'Your main concern'}</span>

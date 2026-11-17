@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ArrowRight, Check, Clock } from 'lucide-react';
 import SourceDrawer from '../components/SourceDrawer';
+import Narration from '../components/Narration';
+import { missionNarration, shortNarration } from '../utils/narration';
 
 export default function MissionStage({ mission, onChooseRecommendation, onAcceptMission, onProceedToFollowUp }) {
   const [response, setResponse] = useState('');
@@ -44,6 +46,7 @@ export default function MissionStage({ mission, onChooseRecommendation, onAccept
     <p className="eyebrow">One next step</p>
     <h1>{mission?.title}</h1>
     <p className="mission-intro">{mission?.whyItMatters}</p>
+    <Narration label="Listen to your next step" text={missionNarration(mission)} />
     {canChoose && <label className="field-label mission-options">
       Choose a recommendation from your plan
       <select className="editorial-input" disabled={busy} value={mission.recommendationId} onChange={event => choose(event.target.value)}>
@@ -78,7 +81,10 @@ export default function MissionStage({ mission, onChooseRecommendation, onAccept
       <label className="field-label">What would you like your advisor to know?<textarea className="editorial-input" value={reason} maxLength={3000} onChange={event => setReason(event.target.value)} rows={3} /></label>
       <button className="primary-action" disabled={busy || !reason.trim()} onClick={() => decide('reject')}>Save my concern</button>
     </div>}
-    {response && <p className="saved-feedback" role="status">{response}</p>}
+    {response && <>
+      <p className="saved-feedback" role="status">{response}</p>
+      <Narration label="Listen to this response" text={shortNarration(response, 550)} scene={false} />
+    </>}
     {error && <p role="alert" className="inline-error">{error}</p>}
     {mission?.status !== 'not_accepted' && <div className="scene-actions">
       <span /><button className="quiet-action" onClick={onProceedToFollowUp}>Try a follow-up <ArrowRight size={18} /></button>

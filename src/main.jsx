@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import AdvisorPortal from './components/AdvisorPortal.jsx';
+import { NarrationProvider } from './components/Narration.jsx';
 import { invitationPath } from './utils/api.js';
 import './index.css';
 import './editorial.css';
@@ -21,7 +22,7 @@ function Entry() {
       .catch(() => setUnavailable(true));
   }, []);
 
-  if (invitationPath || portal === false) return <App />;
+  if (invitationPath || portal === false) return <NarrationProvider><App /></NarrationProvider>;
   if (portal) return <AdvisorPortal />;
   return <div className="app-shell"><p className="app-status" role="status">{unavailable ? 'The workspace could not be opened. Refresh to try again.' : 'Opening The Plan Audit.'}</p></div>;
 }

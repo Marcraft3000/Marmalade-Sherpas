@@ -2,8 +2,9 @@
  * Client API connector for THE PLAN AUDIT backend
  */
 
-export const invitationPath = window.location.pathname.startsWith('/audit/');
-const inviteToken = /^\/audit\/((?:[a-f0-9-]{36}\.)?[A-Za-z0-9_-]{43})\/?$/i.exec(window.location.pathname)?.[1];
+const currentPath = typeof window !== 'undefined' && window.location?.pathname ? window.location.pathname : '';
+export const invitationPath = currentPath.startsWith('/audit/');
+const inviteToken = /^\/audit\/((?:[a-f0-9-]{36}\.)?[A-Za-z0-9_-]{43})\/?$/i.exec(currentPath)?.[1];
 
 function auditFetch(url, options = {}) {
   const headers = new Headers(options.headers);

@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import Narration from '../components/Narration';
+import { narration } from '../utils/narration';
 
 const concerns = ['Planning for the long term', 'Feeling in control of monthly spending', 'Preparing for the unexpected', 'Making room for family goals'];
 const priorities = ['Build a stronger financial safety net', 'Make more room for our goals', 'Feel more in control of monthly spending', 'Plan confidently for the long term'];
@@ -35,6 +37,12 @@ export default function InterrogationStage({ session, onCompleteInterrogation, o
   const partners = session.isCoupleMode ? session.partners || [] : [];
   const partner = individualQuestion(draft.step) ? partners[draft.partnerIndex] || null : null;
   const question = draft.step === 4 ? { ...questions[4], title: session.focusPrompt?.question || questions[4].title } : questions[draft.step];
+  const questionNarration = narration(
+    draft.step === 0 && draft.partnerIndex === 0 && 'Welcome. We’ll start with how things feel to you, then open your plan together',
+    partner && `This question is for ${partner}`,
+    question.title,
+    question.note,
+  );
   const saved = [...draft.answers].reverse().find(a => a.category === question.category && (a.partner || null) === partner);
   const value = draft.value ?? saved?.value ?? (draft.step === 0 ? 50 : '');
   useEffect(() => {
@@ -72,6 +80,7 @@ export default function InterrogationStage({ session, onCompleteInterrogation, o
     <div className="conversation-aside"><p className="eyebrow">First, your perspective</p><div className="conversation-index">0{draft.step + 1}<span>/ 05</span></div><p>{session.caseName}</p>{partners.length > 1 && <p className="partner-label">{partner ? `${partner}'s perspective` : 'Your shared response'}</p>}<div className="conversation-track" aria-hidden="true">{questions.map((_, i) => <i key={i} className={i <= draft.step ? 'is-complete' : ''} />)}</div><p className="aside-note">We'll listen first.<br />The numbers come later.</p></div>
     <div className="conversation-content" key={`${draft.step}-${draft.partnerIndex}`}>
       <h1 ref={heading} tabIndex={-1} className="scene-enter">{question.title}</h1><p className="conversation-note">{question.note}</p>
+      <Narration label="Listen to this question" text={questionNarration} />
       <div className="answer-space">
         {draft.step === 0 ? <><div className="perception-number"><output htmlFor="perception">{value}</output><span>/100</span></div><label className="sr-only" htmlFor="perception">Your estimated financial health</label><input id="perception" className="perception-range" type="range" min="0" max="100" value={value} onChange={e => setDraft({ ...draft, value: Number(e.target.value) })} /><div className="range-labels"><span>Needs support</span><span>Feeling secure</span></div></> : <><div className="answer-options">{choices.map(choice => <button key={choice} aria-pressed={value === choice} onClick={() => setDraft({ ...draft, value: choice })}><span>{choice}</span><span className="choice-marker">{value === choice && <Check size={15} />}</span></button>)}</div>{draft.step >= 2 && <label className="field-label custom-answer">In your own words<textarea className="editorial-input" rows={3} maxLength={3000} value={choices.includes(value) ? '' : value} onChange={e => setDraft({ ...draft, value: e.target.value })} placeholder={draft.step === 4 ? "Tell us what feels uncertain..." : "What matters to you?"} /></label>}</>}
       </div>

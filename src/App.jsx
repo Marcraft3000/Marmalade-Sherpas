@@ -48,8 +48,7 @@ export default function App() {
   const [missionData, setMissionData] = useState(null);
   const [briefingData, setBriefingData] = useState(null);
 
-  // Audio & Modals
-  const [isMuted, setIsMuted] = useState(false);
+  // Modals
   const [isCostModalOpen, setIsCostModalOpen] = useState(false);
   const [isBriefingModalOpen, setIsBriefingModalOpen] = useState(false);
   const [mockMode, setMockMode] = useState(true);
@@ -108,18 +107,11 @@ export default function App() {
     init();
   }, []);
 
-  const handleToggleMute = () => {
-    const next = !isMuted;
-    setIsMuted(next);
-    speechService.setMuted(next);
-  };
-
   // 1. Select Case & Initialize Session
   const handleSelectCase = async (caseId, coupleMode) => {
     setLoading(true);
     setError('');
     try {
-      speechService.stop();
       const newSession = await createSession(caseId, coupleMode);
       setSession(newSession);
       localStorage.setItem('the_plan_audit_session_id', newSession.id);
@@ -268,7 +260,6 @@ export default function App() {
     if (!session || !missionData) return;
     setSession(prev => ({ ...prev, simulatedDay: 30 }));
     switchStage('followup');
-    speechService.speak("Fast forwarding simulated timeline 30 days for jury demonstration.", null, null);
   };
 
   // Advisor Briefing
@@ -309,8 +300,6 @@ export default function App() {
       <Header
         session={session}
         stage={stage}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
         onOpenAdvisorBriefing={handleOpenAdvisorBriefing}
         onOpenCostMonitor={() => setIsCostModalOpen(true)}
         onTimeTravel={handleTimeTravel}
@@ -345,7 +334,6 @@ export default function App() {
                 caseData={cases.find(c => c.id === session.caseId)}
                 onCompleteInterrogation={handleCompleteInterrogation}
                 onSaveAnswer={invitationPath ? answer => submitInterrogationAnswer(session.id, answer) : undefined}
-                isMuted={isMuted}
               />
             )}
 
@@ -365,7 +353,6 @@ export default function App() {
                 onProceedToVerdict={handleProceedToVerdict}
                 returningToProgress={Boolean(returnStage)}
                 onChooseRoute={handleChooseRoute}
-                isMuted={isMuted}
               />
             )}
 

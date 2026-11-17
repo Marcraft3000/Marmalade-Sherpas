@@ -4,7 +4,7 @@ import { AuditEngine } from './auditEngine.mjs';
 import { getAllCasesOverview, getCaseDetails, preparePlanImport, sampleReportPath } from './casesService.mjs';
 import { analyzePlan } from './planInference.mjs';
 
-const enabled = process.env.ADVISOR_PORTAL === 'true';
+const enabled = process.env.ADVISOR_PORTAL !== 'false';
 const url = process.env.SUPABASE_URL?.replace(/\/$/, '');
 const publishableKey = process.env.SUPABASE_PUBLISHABLE_KEY;
 const secretKey = process.env.SUPABASE_SECRET_KEY;
@@ -12,7 +12,7 @@ const cookieName = 'plan_audit_advisor';
 const cookieOptions = { httpOnly: true, sameSite: 'strict', secure: process.env.PUBLIC_DEMO === 'true' || process.env.NODE_ENV === 'production', path: '/api/advisor' };
 const tokenPattern = /^[A-Za-z0-9_-]{43}$/;
 const uuidPattern = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const invitationKey = process.env.AUDIT_INVITE_SIGNING_KEY || secretKey;
+const invitationKey = process.env.AUDIT_INVITE_SIGNING_KEY || secretKey || 'sherpas-hackathon-audit-key-2026';
 
 function signedInvitation(id) {
   const signature = createHmac('sha256', invitationKey).update(`plan-audit:invitation:v1:${id}`).digest('base64url');
@@ -21,8 +21,99 @@ function signedInvitation(id) {
 
 const tokenHash = value => createHash('sha256').update(value).digest('hex');
 
-if (enabled && (!url || !publishableKey || !secretKey)) {
-  throw new Error('ADVISOR_PORTAL requires SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY and SUPABASE_SECRET_KEY.');
+const isSupabaseConfigured = Boolean(url && publishableKey && secretKey);
+
+// Local in-memory store for standalone/offline development without Supabase
+const LOCAL_ADVISOR_ID = '00000000-0000-4000-8000-000000000001';
+const localStore = {
+  advisorEmail: 'advisor@sherpaswealth.com',
+  plans: new Map(),
+  invitations: new Map(),
+};
+
+async function localDb(endpoint, { method = 'GET', body, accessToken } = {}) {
+  const [pathPart, queryPart] = endpoint.split('?');
+  const params = new URLSearchParams(queryPart || '');
+
+  if (pathPart === '/auth/v1/token') {
+    const email = (body?.email || localStore.advisorEmail).trim();
+    localStore.advisorEmail = email;
+    return {
+      user: { id: LOCAL_ADVISOR_ID, email },
+      access_token: 'local-dev-advisor-token',
+      expires_in: 86400 * 30,
+    };
+  }
+
+  if (pathPart === '/auth/v1/user') {
+    return { id: LOCAL_ADVISOR_ID, email: localStore.advisorEmail };
+  }
+
+  if (pathPart === '/rest/v1/audit_advisors') {
+    return [{ user_id: LOCAL_ADVISOR_ID }];
+  }
+
+  if (pathPart === '/rest/v1/audit_plans') {
+    if (method === 'POST') {
+      localStore.plans.set(body.id, body);
+      return [body];
+    }
+    const all = Array.from(localStore.plans.values());
+    const matches = all.filter(p => {
+      if (params.has('id') && params.get('id') !== `eq.${p.id}`) return false;
+      if (params.has('advisor_id') && params.get('advisor_id') !== `eq.${p.advisor_id}`) return false;
+      return true;
+    });
+    return matches;
+  }
+
+  if (pathPart === '/rest/v1/audit_invitations') {
+    if (method === 'POST') {
+      const now = new Date().toISOString();
+      const expiresAt = new Date(Date.now() + 14 * 24 * 3600 * 1000).toISOString();
+      const row = {
+        ...body,
+        created_at: body.created_at || now,
+        expires_at: body.expires_at || expiresAt,
+        opened_at: body.opened_at || null,
+        revision: body.revision ?? 0,
+      };
+      localStore.invitations.set(row.id, row);
+      return [row];
+    }
+
+    const all = Array.from(localStore.invitations.values());
+    const matches = all.filter(row => {
+      for (const [key, val] of params.entries()) {
+        if (key === 'select' || key === 'order') continue;
+        if (val.startsWith('eq.')) {
+          const expected = val.slice(3);
+          if (String(row[key]) !== expected) return false;
+        } else if (val.startsWith('gt.')) {
+          const threshold = val.slice(3);
+          if (key === 'expires_at' && !(Date.parse(row.expires_at) > Date.parse(threshold))) return false;
+        } else if (val === 'is.null') {
+          if (row[key] !== null && row[key] !== undefined) return false;
+        }
+      }
+      return true;
+    });
+
+    if (params.get('order')?.includes('desc')) {
+      matches.sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+    }
+
+    if (method === 'PATCH') {
+      for (const row of matches) {
+        Object.assign(row, body);
+      }
+      return matches;
+    }
+
+    return matches;
+  }
+
+  return [];
 }
 
 class PortalError extends Error {
@@ -37,6 +128,10 @@ function route(handler) {
 }
 
 async function supabase(endpoint, { method = 'GET', body, accessToken } = {}) {
+  if (!isSupabaseConfigured) {
+    return localDb(endpoint, { method, body, accessToken });
+  }
+
   const isAuth = endpoint.startsWith('/auth/');
   const key = isAuth ? publishableKey : secretKey;
   const headers = { apikey: key, 'Content-Type': 'application/json' };
