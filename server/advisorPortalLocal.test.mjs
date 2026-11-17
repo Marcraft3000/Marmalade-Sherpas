@@ -109,6 +109,20 @@ test('advisor portal works completely in local dev mode without Supabase', async
   const cron = await fetch(root + '/api/cron/reminders', { method: 'POST' });
   assert.equal(cron.status, 401);
 
+  // 8b. A couple invitation gives each partner their own link, limited to their own answers
+  const couple = await (await advisor('/invitations', { method: 'POST', body: JSON.stringify({ caseId: samplePlanId, coupleMode: true }) })).json();
+  assert.equal(couple.memberLinks.length, 2);
+  const [first, second] = couple.memberLinks;
+  const memberToken = first.path.replace('/audit/', '');
+  const opened = await (await fetch(root + '/api/invitations/open', { headers: { 'X-Audit-Invite': memberToken } })).json();
+  assert.equal(opened.member, first.name);
+  const wrong = await fetch(root + '/api/audit/interrogate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Audit-Invite': memberToken },
+    body: JSON.stringify({ sessionId: opened.session.id, answer: { category: 'perceived_health', value: 40, partner: second.name } }),
+  });
+  assert.equal(wrong.status, 403);
+
   // 9. Sign-up and demo access
   const signup = await advisor('/signup', { method: 'POST', body: JSON.stringify({ name: 'Ana', email: 'ana@example.com', password: 'short' }) });
   assert.equal(signup.status, 400);

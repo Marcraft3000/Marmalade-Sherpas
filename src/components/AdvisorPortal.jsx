@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowRight, Bell, CalendarClock, Clipboard, Link2, LogOut, Mail, MessageSquare, RefreshCw, Sparkles, UserPlus, Users } from 'lucide-react';
+import { ArrowRight, Bell, Bot, CalendarClock, Clipboard, Link2, LogOut, Mail, MessageSquare, RefreshCw, Sparkles, UserPlus, Users } from 'lucide-react';
 import { advisorRequest } from '../utils/api';
 import PlanImport from './PlanImport';
 import './advisor.css';
@@ -71,6 +71,20 @@ function MeetingBrief({ briefing }) {
   </section>;
 }
 
+function MemberLinks({ links, copiedLink, onCopy }) {
+  if (!links?.length) return null;
+  return <div className="member-links">
+    <p className="field-label">One link per person <small>(each answers from their own phone)</small></p>
+    {links.map(({ name, path }) => {
+      const value = new URL(path, window.location.origin).href;
+      return <div key={name}>
+        <span>{name}</span>
+        <button className="quiet-action" onClick={() => onCopy(value)}><Clipboard size={15} /> {copiedLink === value ? 'Copied' : `Copy ${name}’s link`}</button>
+      </div>;
+    })}
+  </div>;
+}
+
 function ClientDetail({ detail, item, busy, emailDelivery, copiedLink, onCopy, onSaveNote, onSend }) {
   const [note, setNote] = useState(item.note);
   const [email, setEmail] = useState(item.clientEmail);
@@ -78,7 +92,12 @@ function ClientDetail({ detail, item, busy, emailDelivery, copiedLink, onCopy, o
   const link = detail.path ? new URL(detail.path, window.location.origin).href : null;
   const canRemind = Boolean(item.nextStep);
   return <div className="advisor-answers">
+    {detail.aiSummary && <section className="ai-summary" aria-label="Summary for the advisor">
+      <span className="eyebrow"><Bot size={14} aria-hidden="true" /> {detail.aiSummary.source === 'ai' ? 'AI summary · from the client’s own answers' : 'Summary'}</span>
+      <p>{detail.aiSummary.text}</p>
+    </section>}
     <InviteLink value={link} expiresAt={item.expiresAt} copied={copiedLink === link} onCopy={onCopy} />
+    <MemberLinks links={detail.memberLinks} copiedLink={copiedLink} onCopy={onCopy} />
     <section className="client-contact" aria-label="Messages to the client">
       <h3><Mail size={17} /> Messages</h3>
       <label className="field-label">Client email<input className="editorial-input" type="email" value={email} placeholder="client@example.com" onChange={event => setEmail(event.target.value)} onBlur={() => email !== item.clientEmail && onSaveNote({ clientEmail: email })} /></label>
@@ -239,7 +258,7 @@ export default function AdvisorPortal() {
     const form = event.currentTarget;
     const fields = new FormData(form);
     run(async () => {
-      const { invitation, path } = await advisorRequest('/invitations', {
+      const { invitation, path, memberLinks } = await advisorRequest('/invitations', {
         method: 'POST',
         body: {
           caseId: planId,
@@ -249,7 +268,7 @@ export default function AdvisorPortal() {
           note: fields.get('note'),
         },
       });
-      setLink({ id: invitation.id, value: new URL(path, window.location.origin).href, expiresAt: invitation.expiresAt, email: invitation.clientEmail });
+      setLink({ id: invitation.id, value: new URL(path, window.location.origin).href, expiresAt: invitation.expiresAt, email: invitation.clientEmail, memberLinks });
       setCopiedLink('');
       setWorkspace(previous => ({ ...previous, invitations: [invitation, ...previous.invitations] }));
       form.reset();
@@ -364,6 +383,7 @@ export default function AdvisorPortal() {
                 }} />
                 {link && <>
                   <InviteLink value={link.value} expiresAt={link.expiresAt} copied={copiedLink === link.value} onCopy={copyLink} />
+                  <MemberLinks links={link.memberLinks} copiedLink={copiedLink} onCopy={copyLink} />
                   {link.email && <button className="quiet-action" disabled={busy} onClick={() => send(link.id, 'invite')}><Mail size={16} /> Email the invitation to {link.email}</button>}
                 </>}
               </section>

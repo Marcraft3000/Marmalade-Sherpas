@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check, Clock } from 'lucide-react';
+import { ArrowRight, CalendarPlus, Check, Clock } from 'lucide-react';
+import { checkInEvents, downloadCalendar, googleCalendarLink } from '../utils/calendar';
+
 import SourceDrawer from '../components/SourceDrawer';
 import Narration from '../components/Narration';
 import { missionNarration, shortNarration } from '../utils/narration';
+
+const dateFormat = new Intl.DateTimeFormat(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
 
 export default function MissionStage({ mission, onChooseRecommendation, onAcceptMission, onProceedToFollowUp }) {
   const [response, setResponse] = useState('');
@@ -80,6 +84,17 @@ export default function MissionStage({ mission, onChooseRecommendation, onAccept
     {showReason && <div className="barrier-input">
       <label className="field-label">What would you like your advisor to know?<textarea className="editorial-input" value={reason} maxLength={3000} onChange={event => setReason(event.target.value)} rows={3} /></label>
       <button className="primary-action" disabled={busy || !reason.trim()} onClick={() => decide('reject')}>Save my concern</button>
+    </div>}
+    {mission?.status === 'accepted' && mission.checkpoints?.length > 0 && <div className="calendar-actions">
+      <CalendarPlus size={20} aria-hidden="true" />
+      <div>
+        <h3>Put your check-ins in your calendar</h3>
+        <p>{checkInEvents(mission).map(event => `Day ${event.day}: ${dateFormat.format(event.start)}`).join(' · ')}</p>
+        <div>
+          <button className="quiet-action" onClick={() => downloadCalendar(mission)}>Apple / Outlook (.ics)</button>
+          {checkInEvents(mission).map(event => <a key={event.day} className="quiet-action" href={googleCalendarLink(event)} target="_blank" rel="noopener noreferrer">Google Calendar · day {event.day}</a>)}
+        </div>
+      </div>
     </div>}
     {response && <>
       <p className="saved-feedback" role="status">{response}</p>

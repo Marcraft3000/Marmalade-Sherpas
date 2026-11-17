@@ -35,6 +35,8 @@ The **Clients** list shows each invitation's journey (invited → opened → per
 
 - **Leave a note.** The client sees it at the top of the audit the next time they open their link.
 - **Email the invitation or a reminder.** With `RESEND_API_KEY` the server sends it; otherwise the message opens in the advisor's email app, ready to send.
+- **Send each partner their own link.** Couple invitations include one link per person. Each answers their own questions from their own phone; whoever finishes first waits, and the plan opens with both views side by side.
+- **Read a two-sentence summary.** Once the client has answered, an AI summary written only from their answers (with any number checked against them) tells the advisor where the client stands. Set `ADVISOR_SUMMARY_AI=false` to use the template instead.
 - **Get real check-ins.** Three and thirty days after the client commits to a step, a reminder links to `/audit/<token>?checkin=3` (or `30`), which opens that check-in directly. The server checks hourly; because free Render instances sleep, [the reminders workflow](.github/workflows/reminders.yml) also calls `POST /api/cron/reminders` daily. Set the `APP_URL` and `CRON_SECRET` repository secrets and the same `CRON_SECRET` on Render. Resend's test sender only delivers to the Resend account's own address; verify a domain to email clients.
 
 Use a sample plan and fictional responses when verifying the flow. The advisor workspace can also import a client's JSON, preview the detected fields and findings, and create an invitation from that plan. Imported plans are scoped to the advisor who uploaded them in Supabase.
@@ -52,7 +54,7 @@ Set a stable `AUDIT_INVITE_SIGNING_KEY` on Render if you want it separate from t
 3. The reveal starts with those words, a short skippable transition, and the plan’s score. Reduced-motion preferences skip the pause.
 4. The client can choose which source-backed finding to explore first. This changes the first finding and can change the preparation step. Findings appear individually with a contextual reflection question. Switch between **In plain language** and **Numbers & context**, ask a question for a deeper explanation, listen with browser speech, or open a readable source summary in an accessible Radix dialog. Technical pointers, replacement keys, and raw JSON remain out of the client-facing panel.
 5. A high score is contextualized by a retirement depletion finding only when that finding is actually in the plan. No client-name-specific story or age is embedded in the application.
-6. Select a preparation step based on an original plan recommendation, record a barrier and receive a contextual response, then try clearly labelled day 3 and day 30 check-ins. AI can phrase the preparation questions and respond to the client's reported progress; the actions themselves are self-reported.
+6. Select a preparation step based on an original plan recommendation, add the day 3 and day 30 check-ins to a calendar (.ics or Google Calendar), record a barrier and receive a contextual response, then try clearly labelled day 3 and day 30 check-ins. AI can phrase the preparation questions and respond to the client's reported progress; the actions themselves are self-reported.
 
 The advisor can open an invitation to see what surprised the client, the findings and questions they saved, and the preparation step they accepted. Each sample finding with a verified report reference links to its PDF page. Retirement findings offer a projected net-worth chart when the plan includes a valid annual series.
 

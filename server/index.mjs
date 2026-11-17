@@ -173,6 +173,13 @@ app.post('/api/audit/summary', async (req, res) => {
         return res.status(400).json({ success: false, error: 'Complete the final question before submitting.' });
       }
       await engine.handleInterrogationAnswer(sessionId, req.body.answer);
+      // With separate links, the first partner to finish waits for the other perspective.
+      const session = engine.getSession(sessionId);
+      const waitingFor = session.isCoupleMode ? session.partners.filter(person => !Object.hasOwn(session.partnerScores, person) || !session.answers.some(a => a.category === 'main_concern' && a.partner === person)) : [];
+      if (waitingFor.length) {
+        await saveSession(req, session);
+        return res.json({ success: true, waitingFor });
+      }
     }
     const summary = await engine.generateInterrogationSummary(sessionId);
     await saveSession(req, req.auditEngine.getSession(sessionId));

@@ -164,3 +164,15 @@
 .advisor-note-banner { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; width: min(1140px, 91%); margin: 18px auto 0; padding: 14px 18px; border: 1px solid #d6e3d0; border-left: 4px solid #04724d; background: #eef4ea; border-radius: 6px; }
 .advisor-note-banner p { margin-top: 4px; font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
 .advisor-note-banner .quiet-action { font-size: 20px; line-height: 1; padding: 2px 8px; }
+
+/* Partner waiting screen */
+.waiting-pulse { display: inline-flex; align-items: center; gap: 10px; margin: 28px 0; padding: 10px 16px; border-radius: 24px; background: #e8efe1; color: #205239; font-size: 14px; }
+.waiting-pulse span { width: 9px; height: 9px; border-radius: 50%; background: #04724d; animation: waiting-pulse 1.6s ease-in-out infinite; }
+@keyframes waiting-pulse { 0%, 100% { opacity: .3; transform: scale(.8); } 50% { opacity: 1; transform: scale(1.15); } }
+@media (prefers-reduced-motion: reduce) { .waiting-pulse span { animation: none; } }
+
+/* Calendar check-ins after accepting a step */
+.calendar-actions { display: flex; gap: 14px; align-items: flex-start; margin-top: 26px; padding: 18px 20px; border: 1px solid #d6e3d0; border-radius: 8px; background: #eef4ea; color: #1d2a22; }
+.calendar-actions h3 { font-size: 18px; }
+.calendar-actions p { margin-top: 4px; color: #51655a; font-size: 14px; }
+.calendar-actions > div > div { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; }

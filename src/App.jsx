@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { flushSync } from 'react-dom';
+import WaitingStage from './stages/WaitingStage';
 import Header from './components/Header';
 import CaseSelection from './stages/CaseSelection';
 import InterrogationStage from './stages/InterrogationStage';
@@ -34,6 +35,14 @@ import { speechService } from './utils/speech';
 
 const reviewStages = ['verdict', 'mission', 'followup'];
 
+function memberWaitingFor(session, member) {
+  const answered = (category, partner) => session.answers.some(answer => answer.category === category && (answer.partner || null) === partner);
+  const ownDone = answered('perceived_health', member) && answered('main_concern', member)
+    && ['confidence', 'financial_priority', 'future_expectation'].every(category => answered(category, null));
+  if (!ownDone) return [];
+  return session.partners.filter(person => !answered('perceived_health', person) || !answered('main_concern', person));
+}
+
 export default function App() {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -58,6 +67,8 @@ export default function App() {
   const [advisorNote, setAdvisorNote] = useState(null);
   const [noteDismissed, setNoteDismissed] = useState(false);
   const [realCheckIn, setRealCheckIn] = useState(null);
+  const [waitingFor, setWaitingFor] = useState([]);
+  const member = invitationPath ? invitationContext.member : null;
 
   function switchStage(next) {
     if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -96,6 +107,13 @@ export default function App() {
                 restored.simulatedDay = checkInDay;
                 restored.currentStage = 'followup';
               }
+              // A partner who finished their own questions waits for the other perspective.
+              const waiting = invitationPath && invitationContext.member && !restored.summary
+                ? memberWaitingFor(restored, invitationContext.member) : [];
+              if (waiting.length) {
+                setWaitingFor(waiting);
+                restored.currentStage = 'waiting';
+              }
               setSession(restored);
               const reviewingFrom = sessionStorage.getItem(`audit-review-${restored.id}`);
               const reviewStage = restored.reveal && reviewStages.includes(reviewingFrom) ? reviewingFrom : null;
@@ -120,6 +138,24 @@ export default function App() {
     }
     init();
   }, []);
+
+  // While one partner waits, check every few seconds whether the other has finished.
+  useEffect(() => {
+    if (stage !== 'waiting' || !session) return;
+    const timer = window.setInterval(async () => {
+      try {
+        const latest = await fetchSession(session.id);
+        if (latest.summary) {
+          setSession(latest);
+          setInterrogationSummary(latest.summary);
+          switchStage('summary');
+        } else if (member) {
+          setWaitingFor(memberWaitingFor(latest, member));
+        }
+      } catch {}
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [stage, session?.id]);
 
   // 1. Select Case & Initialize Session
   const handleSelectCase = async (caseId, coupleMode) => {
@@ -146,6 +182,12 @@ export default function App() {
         for (const ans of answers) await submitInterrogationAnswer(session.id, ans);
       }
       const summary = await fetchSummary(session.id, invitationPath ? answers.at(-1) : undefined);
+      if (summary?.waitingFor) {
+        setSession(await fetchSession(session.id));
+        setWaitingFor(summary.waitingFor);
+        switchStage('waiting');
+        return;
+      }
       localStorage.removeItem(`audit-reveal-${session.id}`);
       setRevealData(null);
       setVerdictData(null);
@@ -352,6 +394,7 @@ export default function App() {
                 caseData={cases.find(c => c.id === session.caseId)}
                 onCompleteInterrogation={handleCompleteInterrogation}
                 onSaveAnswer={invitationPath ? answer => submitInterrogationAnswer(session.id, answer) : undefined}
+                member={member}
               />
             )}
 
@@ -390,6 +433,10 @@ export default function App() {
                 onAcceptMission={handleAcceptMission}
                 onProceedToFollowUp={handleProceedToFollowUp}
               />
+            )}
+
+            {stage === 'waiting' && session && (
+              <WaitingStage member={member} waitingFor={waitingFor} onEditAnswers={() => switchStage('interrogation')} />
             )}
 
             {stage === 'followup' && session && (

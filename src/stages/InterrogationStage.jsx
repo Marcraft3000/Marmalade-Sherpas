@@ -14,12 +14,12 @@ const questions = [
   { category: 'future_expectation', title: 'What would make this feel clearer?', note: 'One more thought before we put your perspective beside the plan.' },
 ];
 const individualQuestion = step => step === 0 || step === 2;
-export default function InterrogationStage({ session, onCompleteInterrogation, onSaveAnswer }) {
+export default function InterrogationStage({ session, onCompleteInterrogation, onSaveAnswer, member }) {
   const key = `audit-draft-${session.id}`;
   const [draft, setDraft] = useState(() => {
     if (onSaveAnswer) {
       const answers = session.answers || [];
-      const partners = session.isCoupleMode ? session.partners : [null];
+      const partners = member ? [member] : session.isCoupleMode ? session.partners : [null];
       const unansweredPartner = partners.findIndex(partner => !answers.some(answer => answer.category === 'perceived_health' && answer.partner === partner));
       if (unansweredPartner >= 0) return { step: 0, partnerIndex: unansweredPartner, answers, value: null };
       for (let step = 1; step < questions.length; step++) {
@@ -34,7 +34,8 @@ export default function InterrogationStage({ session, onCompleteInterrogation, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const heading = useRef(null);
-  const partners = session.isCoupleMode ? session.partners || [] : [];
+  // A personal link only asks this person's individual questions; shared answers can be reviewed by either partner.
+  const partners = member ? [member] : session.isCoupleMode ? session.partners || [] : [];
   const partner = individualQuestion(draft.step) ? partners[draft.partnerIndex] || null : null;
   const question = draft.step === 4 ? { ...questions[4], title: session.focusPrompt?.question || questions[4].title } : questions[draft.step];
   const questionNarration = narration(
@@ -77,7 +78,7 @@ export default function InterrogationStage({ session, onCompleteInterrogation, o
   }
   const choices = draft.step === 1 ? confidenceOptions : draft.step === 2 ? concerns : draft.step === 3 ? priorities : [];
   return <section className="conversation-stage">
-    <div className="conversation-aside"><p className="eyebrow">First, your perspective</p><div className="conversation-index">0{draft.step + 1}<span>/ 05</span></div><p>{session.caseName}</p>{partners.length > 1 && <p className="partner-label">{partner ? `${partner}'s perspective` : 'Your shared response'}</p>}<div className="conversation-track" aria-hidden="true">{questions.map((_, i) => <i key={i} className={i <= draft.step ? 'is-complete' : ''} />)}</div><p className="aside-note">We'll listen first.<br />The numbers come later.</p></div>
+    <div className="conversation-aside"><p className="eyebrow">First, your perspective</p><div className="conversation-index">0{draft.step + 1}<span>/ 05</span></div><p>{session.caseName}</p>{(partners.length > 1 || member) && <p className="partner-label">{partner ? `${partner}'s perspective` : 'Your shared response'}</p>}<div className="conversation-track" aria-hidden="true">{questions.map((_, i) => <i key={i} className={i <= draft.step ? 'is-complete' : ''} />)}</div><p className="aside-note">We'll listen first.<br />The numbers come later.</p></div>
     <div className="conversation-content" key={`${draft.step}-${draft.partnerIndex}`}>
       <h1 ref={heading} tabIndex={-1} className="scene-enter">{question.title}</h1><p className="conversation-note">{question.note}</p>
       <Narration label="Listen to this question" text={questionNarration} />

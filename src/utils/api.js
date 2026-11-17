@@ -26,12 +26,12 @@ export async function openInvitation() {
   const res = await auditFetch('/api/invitations/open');
   if (!res.ok) throw new Error('Invitation unavailable');
   const payload = await res.json();
-  invitationContext = { advisorNote: payload.advisorNote || null, dueCheckIns: payload.dueCheckIns || [] };
+  invitationContext = { advisorNote: payload.advisorNote || null, dueCheckIns: payload.dueCheckIns || [], member: payload.member || null };
   return payload.session;
 }
 
 // Advisor note and check-ins due for the opened invitation.
-export let invitationContext = { advisorNote: null, dueCheckIns: [] };
+export let invitationContext = { advisorNote: null, dueCheckIns: [], member: null };
 export const requestedCheckIn = (() => {
   if (typeof window === 'undefined') return null;
   const day = Number(new URLSearchParams(window.location?.search || '').get('checkin'));
@@ -103,7 +103,7 @@ export async function fetchSummary(sessionId, answer) {
   });
   if (!res.ok) throw new Error('Failed to fetch summary');
   const data = await res.json();
-  return data.summary;
+  return data.waitingFor ? { waitingFor: data.waitingFor } : data.summary;
 }
 
 export async function fetchReveal(sessionId) {

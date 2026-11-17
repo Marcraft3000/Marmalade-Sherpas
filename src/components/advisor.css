@@ -107,3 +107,10 @@
   .advisor-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .journey-track span { display: none; }
 }
+
+.ai-summary { margin-bottom: 18px; padding: 14px 16px; border-radius: 8px; background: #1c2529; color: #f3f1ea; }
+.ai-summary .eyebrow { display: inline-flex; align-items: center; gap: 6px; color: #b9d3c3; }
+.ai-summary p { margin-top: 6px; font-size: 15px; line-height: 1.55; }
+.member-links { margin: 4px 0 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.member-links > div { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; font-size: 14px; }
+.member-links small { color: var(--muted); font-weight: 400; }
