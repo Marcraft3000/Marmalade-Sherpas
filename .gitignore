@@ -12,3 +12,14 @@ test-results/
 playwright-report/
 .env.example
 data/usage.json
+
+# Local tooling and template leftovers (kept on disk, not published)
+.claude/
+.agents/
+AGENTS.md
+examples/
+scripts/deploy-azure.ps1
+assets/banner.png
+assets/discord-qr.png
+assets/join.png
+video/
