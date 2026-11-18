@@ -1,6 +1,32 @@
 # The Plan Audit
 
+**Live MVP:** https://marmalade-sherpas.onrender.com/ (click **Explore the demo workspace**, no account needed)
+
 An interactive explanation of an existing financial plan: the client gives their perspective first, then sees the plan in context and chooses a next step.
+
+Built for the Sherpas x UPV Sigma Data Club Hackathon 2026.
+
+## The problem
+
+Sherpas already produces a complete financial plan: a score, projections and recommendations. Two questions remain open: does the client actually understand it, and does the advisor know what the client thinks of it?
+
+## What we built
+
+The Plan Audit turns the report into a short conversation with the client and a follow-up tool for the advisor.
+
+- **Perspective first.** Before seeing any number, the client estimates their plan's score and says what worries them. Each partner answers on their own phone. The gap between expectation and the real plan is what sticks.
+- **A guided reveal.** The plan opens with the client's own words, then their estimate beside the real score. The client picks which finding to explore first, in plain language or with the numbers in context, and can ask questions about it.
+- **AI with limits.** The model selects, explains and asks; it never invents scores or amounts and never recalculates the plan. Every figure points to its exact value in the uploaded JSON, and an answer containing a number that is not in the source is discarded.
+- **From understanding to action.** The client commits to one concrete step, adds it to their calendar, and gets check-ins on day 3 and day 30.
+- **Any client's JSON.** Advisors upload plans in any schema. AI suggests the fields and findings; the advisor reviews them before inviting the client, then follows each client's journey with a summary written only from the client's answers.
+
+We also chose what not to build: no free-form chatbot, no recalculation of the plan, no dashboard full of charts.
+
+| Advisor sign-in | Advisor workspace |
+|---|---|
+| ![Advisor sign-in with demo access](assets/screenshots/workspace-login.png) | ![Advisor workspace with client journeys](assets/screenshots/advisor-workspace.png) |
+
+**Stack:** React + Vite + Tailwind, Node/Express, Supabase (advisor accounts and plans), the Sherpas LLM proxy, Resend for email, deployed on Render.
 
 ## Run locally
 
@@ -69,7 +95,7 @@ Use **Import a client plan** on the client list. Upload one client’s JSON expo
 - If a document omits context for a value, confirm its meaning with the source before including it in the audit. Each finding retains its original value and location in the uploaded JSON.
 - One client per import: multiple recognized financial-health plans in the same file produce an explicit error. Unsupported shapes and invalid mappings also produce actionable errors.
 - Generic household arrays use `first_name` or `name`, and explicit roles `client`, `spouse`, `partner`, `co-client` or `coclient`. Children are not treated as partners; missing roles do not create a fictitious second perspective.
-- The original source location and value are retained for each finding. Imports persist under `data/imports/`; sessions persist under `data/sessions/`. Both are excluded from git.
+- The original source location and value are retained for each finding. Imports persist under `data/imports/`; sessions persist under `data/sessions/`. Both, and the AI usage log `data/usage.json`, are excluded from git.
 
 Sherpas provided the original files under `cases/` as examples of its current system. Keep them intact. Sample PDF references live under `server/report-sources/`. `server/planInference.mjs` suggests fields with AI, `server/planAdapter.mjs` validates data, and `server/auditEngine.mjs` owns the flow.
 

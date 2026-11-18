@@ -11,3 +11,4 @@ data/test-*/
 test-results/
 playwright-report/
 .env.example
+data/usage.json
